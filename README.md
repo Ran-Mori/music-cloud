@@ -138,3 +138,49 @@
 > * 最后在主函数中调用`(s *SongController)Router`方法，初始化Map容器，然后http进行监听。
 >
 > ***
+
+## 使用HTTPRouter
+
+> ### 导入依赖
+>
+> * `import github.com/julienschmidt/httprouter v1.3.0`
+>
+> ### 路径匹配规则
+>
+> * 冒号匹配
+>
+>   ```shell
+>   Path: "/blog/:category/:id" 
+>   匹配 "/blog/daily/4" 即category = daily，id = 3
+>   ```
+>
+> * *匹配
+>
+>   ```shell
+>   Path: "/files/*filePath"
+>   匹配 "/files/opt" 即filePath = /opt
+>   ```
+>
+> ### handler方法格式
+>
+> * `func(w http.ResponseWriter, r http.Requset, params httprouter.Params)`
+>
+> ***
+
+## 错误和经验总结
+
+> ### golang中的nil
+>
+> * golang中的`nil`只能代表指针，即nil实际上是`int`类型，代表一个内存地址
+> * 即当函数的返回值是一个实体，如返回值为`entity.Song`时，不能使用`reetrun nil`返回
+> * 要么使用`return entity.Song{}`退而求其次返回，要不直接把函数返回值声明成指针`*entity.Song`
+>
+> ### 从get请求URL中获取参数
+>
+> * `value := http.Request.URL.Query().Get("key")`
+> * 感觉比SpringBoot的框架获取强，这样更直接心里都要更踏实一些。
+>
+> ### 从Post请求的Body体中获取参数
+>
+> * `value := http.Request.PostFormValue("key")`
+
