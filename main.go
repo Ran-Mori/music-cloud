@@ -1,30 +1,34 @@
 package main
 
 import (
-	"NeteaseMusicCloudDist/basic"
-	"NeteaseMusicCloudDist/controller"
+	"NeteaseMusicCloudDisk/basic"
+	"NeteaseMusicCloudDisk/controller"
 	"github.com/julienschmidt/httprouter"
-	_ "github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"time"
 )
 
+var Router = httprouter.New()
+
 func main()  {
 	basic.InitDataBase()
 	defer basic.DB.Close()
-
-	router := httprouter.New()
+	RouterInit()
 
 	server :=&http.Server{
-		Addr: "127.0.0.1:80",
-		ReadTimeout: 5 * time.Second,
-		Handler: router,
+		Addr: ":8001",
+		ReadTimeout: 5 * time.Minute,
+		WriteTimeout: 5 * time.Minute,
+		Handler: Router,
 	}
 
-	new(controller.SongController).Router(router)
 	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func RouterInit(){
+	new(controller.SongController).Router(Router)
 }
