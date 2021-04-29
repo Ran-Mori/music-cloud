@@ -1,15 +1,15 @@
 package dao
 
 import (
-	"NeteaseMusicCloudDist/basic"
-	"NeteaseMusicCloudDist/entity"
+	"NeteaseMusicCloudDisk/basic"
+	"NeteaseMusicCloudDisk/entity"
 	"log"
 )
 
 type SongDao struct {}
 
 func (songDao *SongDao)QueryAll() ([]entity.Song,bool){
-	rows, err := basic.DB.Query("select * from song")
+	rows, err := basic.DB.Query("select * from song order by id desc ")
 	defer rows.Close()
 
 	if err != nil {
