@@ -124,11 +124,11 @@
 >
 >   ```go
 >   type SongController struct {}
->     
+>       
 >   var songDao = new(dao.SongDao)
->     
+>       
 >   func (s *SongController)Router(handler *basic.RouterHandler){}//用于向RouterHandler添加URL到方法的映射
->     
+>       
 >   func (s *SongController)QueryAll(w http.ResponseWriter,r *http.Request){}//实际的
 >   ```
 
@@ -367,6 +367,10 @@
 
 ## 错误和经验总结
 
+> ### golang被墙
+>
+> * `go env -w GOPROXY=https://goproxy.io,direct`
+>
 > ### golang中的nil
 >
 > * golang中的`nil`只能代表指针，即nil实际上是`int`类型，代表一个内存地址
