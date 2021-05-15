@@ -20,6 +20,7 @@ var songDao = new(dao.SongDao)
 
 func (s *SongController)Router(router *httprouter.Router){
 	router.GET("/songs",s.QueryAll)
+	router.GET("/songs/like/:keyword",s.QueryLike)
 	router.GET("/song/:id",s.GetSongHandler)
 	router.DELETE("/song/:id",s.DeleteOneById)
 	router.POST("/song/upload",s.Upload)
@@ -179,11 +180,43 @@ func (s *SongController)DownLoad(w http.ResponseWriter,r *http.Request,_ httprou
 	io.Copy(w,file)
 }
 
+
+func (s *SongController)QueryLike(w http.ResponseWriter,r *http.Request,params httprouter.Params){
+	keyword := params.ByName("keyword")
+
+	if songs,ok := songDao.LikeSingerOrSongName(keyword);ok{
+		w.Header().Set("Content-Type","application/json")
+		songsMap := make(map[string]interface{})
+		songsMap["songs"] = songs
+		var result = ResultForceByJava{
+			Code: 200,
+			Message: "发送成功",
+			Data: songsMap,
+		}
+		json,_ := json.Marshal(result)
+		w.Write(json)
+	}else {
+		http.Error(w,"like query error",http.StatusBadGateway)
+		log.Println("like查询出错")
+	}
+}
+
 func (s SongController)GetSongHandler(w http.ResponseWriter,r *http.Request,params httprouter.Params){
 	idValue := params.ByName("id")
 	if strings.HasPrefix(idValue,"download"){
 		s.DownLoad(w,r,params)
-	}else {
+	}else{
+		s.SelectOneById(w,r,params)
+	}
+}
+
+func (s SongController)GetSongsHandler(w http.ResponseWriter,r *http.Request,params httprouter.Params){
+	idValue := params.ByName("id")
+	if strings.HasPrefix(idValue,"download"){
+		s.DownLoad(w,r,params)
+	}else if strings.HasPrefix(idValue,"like/"){
+		s.QueryLike(w,r,params)
+	}else{
 		s.SelectOneById(w,r,params)
 	}
 }
