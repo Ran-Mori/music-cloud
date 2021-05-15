@@ -124,11 +124,11 @@
 >
 >   ```go
 >   type SongController struct {}
->       
+>         
 >   var songDao = new(dao.SongDao)
->       
+>         
 >   func (s *SongController)Router(handler *basic.RouterHandler){}//用于向RouterHandler添加URL到方法的映射
->       
+>         
 >   func (s *SongController)QueryAll(w http.ResponseWriter,r *http.Request){}//实际的
 >   ```
 
@@ -406,6 +406,12 @@
 >
 > * `docker run -itd -v /opt/go:/opt/go -v /home/music:/home/music -p 8001:8001 --name goproject golang`
 > * 一定不要忘记`/home/music`目录也要进行映射，不然容易找不到文件而报空指针异常
+>
+> ### windows下编译Linux版本
+>
+> * `SET CGO_ENABLED=0`
+> * `SET GOOS=linux`
+> * `go build`
 >
 > ### linux非docker部署失败
 >

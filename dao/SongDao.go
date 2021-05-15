@@ -4,6 +4,7 @@ import (
 	"NeteaseMusicCloudDisk/basic"
 	"NeteaseMusicCloudDisk/entity"
 	"log"
+	"strings"
 )
 
 type SongDao struct {}
@@ -87,4 +88,32 @@ func (songDao *SongDao)Insert(song *entity.Song) int{
 	}
 	lastInsertId, _ := result.LastInsertId()
 	return int(lastInsertId)
+}
+
+func (songDao *SongDao)LikeSingerOrSongName(str string) ([]entity.Song,bool){
+	stmt, err := basic.DB.Prepare("select * from song where name like ? or singer like ?")
+	if err != nil {
+		log.Println(err)
+		return nil,false
+	}
+
+	keyword := strings.Join([]string{"%",str,"%"},"")
+	rows, err := stmt.Query(keyword,keyword)
+	defer rows.Close()
+	if err != nil {
+		log.Println(err)
+		return nil,false
+	}
+
+	songs := make([]entity.Song,0)
+	for rows.Next() {
+		var song entity.Song
+		err := rows.Scan(&song.Id, &song.Singer, &song.Name)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		songs = append(songs,song)
+	}
+	return songs,true
 }
