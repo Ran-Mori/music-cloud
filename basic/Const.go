@@ -1,10 +1,10 @@
 package basic
 
 const (
-	Host = "47.108.63.126"
+	Host = "*****"
 	Port = "3306"
 	Username = "root"
-	Password = "542270191MSzyl"
+	Password = "*****"
 	Database = "netease"
 	DriverName = "mysql"
 	MusicBasePath = "/home/music/"

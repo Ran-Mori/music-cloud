@@ -124,11 +124,11 @@
 >
 >   ```go
 >   type SongController struct {}
->         
+>           
 >   var songDao = new(dao.SongDao)
->         
+>           
 >   func (s *SongController)Router(handler *basic.RouterHandler){}//用于向RouterHandler添加URL到方法的映射
->         
+>           
 >   func (s *SongController)QueryAll(w http.ResponseWriter,r *http.Request){}//实际的
 >   ```
 
@@ -434,6 +434,11 @@
 >
 > * 不能上传源文件带有`&`符号的歌曲，不然在解析的时候会被认为是URL参数的分隔符
 > * 如`Charlie Puth & Selena Gomez - We Don't Talk Anymore.mp3`就会失败
+>
+> ### mac下编译Linux可执行文件
+>
+> * `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go`这几条指令一起执行，不要单独执行一条
+> * ftp传过去应该没有可执行的权限，记得`chmod +777`
 >
 > ***
 
