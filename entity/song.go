@@ -1,7 +1,7 @@
 package entity
 
 type Song struct {
-	Id int `json:"id"`
-	Singer string `json:"singer"`
-	Name string `json:"name"`
+	Id     string `json:"id"`
+	Title  string `json:"title"`
+	Artist string `json:"artist"`
 }
