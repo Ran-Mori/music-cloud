@@ -41,18 +41,22 @@ func GetMd5(rs io.ReadSeeker) string {
 	return result
 }
 
-func GetTitleAndArtist(rs io.ReadSeeker) (string, string) {
+func GetTitleArtistAndPicture(rs io.ReadSeeker) (string, string, []byte) {
 	metaInfo, err := tag.ReadFrom(rs)
 
 	title, artist := "", ""
+	picture := []byte("")
 	if err != nil {
 		log.Fatal(err)
 	} else {
 		title, artist = metaInfo.Title(), metaInfo.Artist()
+		if metaInfo.Picture() != nil {
+			picture = metaInfo.Picture().Data
+		}
 	}
 
 	rs.Seek(0, io.SeekStart)
-	return title, artist
+	return title, artist, picture
 }
 
 func GetUserHomeDir() string {
