@@ -31,13 +31,12 @@ func GetMd5(rs io.ReadSeeker) string {
 
 	result := ""
 	if _, err := io.Copy(hash, rs); err != nil {
-		fmt.Errorf("%x", err)
+		log.Println(err)
 	} else {
 		result = fmt.Sprintf("%x", hash.Sum(nil))
-		fmt.Printf("%x", result)
+		log.Println(result)
 	}
 	rs.Seek(0, io.SeekStart)
-	log.Println(rs)
 	return result
 }
 
@@ -47,7 +46,7 @@ func GetTitleArtistAndPicture(rs io.ReadSeeker) (string, string, []byte) {
 	title, artist := "", ""
 	picture := []byte("")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	} else {
 		title, artist = metaInfo.Title(), metaInfo.Artist()
 		if metaInfo.Picture() != nil {
