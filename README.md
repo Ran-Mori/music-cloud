@@ -39,7 +39,7 @@ I would recommend you just download release executable targets from this page, a
 
    ```shell
    cd ~/music-cloud/backend-go
-   go get . //make sure dependency of this project is right
+   go get . #make sure dependency of this project is right
    env GOOS=linux GOARCH=amd64 go build -o music-cloud-linux-amd64
    ```
 
