@@ -40,4 +40,15 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    implementation 'com.airbnb.android:lottie:3.6.0'
+
+    //code_locator
+    implementation "com.bytedance.tools.codelocator:codelocator-core:1.0.0"
+    debugImplementation "com.bytedance.tools.codelocator:codelocator-lancet-xml:1.0.0"
+    debugImplementation "com.bytedance.tools.codelocator:codelocator-lancet-activity:1.0.0"
+    debugImplementation "com.bytedance.tools.codelocator:codelocator-lancet-view:1.0.0"
+    debugImplementation "com.bytedance.tools.codelocator:codelocator-lancet-toast:1.0.0"
+    debugImplementation "com.bytedance.tools.codelocator:codelocator-lancet-dialog:1.0.0"
+    debugImplementation "com.bytedance.tools.codelocator:codelocator-lancet-popup:1.0.0"
+
 }
