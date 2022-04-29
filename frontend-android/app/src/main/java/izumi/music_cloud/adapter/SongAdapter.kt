@@ -8,7 +8,7 @@ import android.view.animation.AnimationUtils
 import androidx.recyclerview.widget.ListAdapter
 import izumi.music_cloud.R
 
-class SongAdapter: ListAdapter<SongData, SongViewHolder>(DiffCallback) {
+class SongAdapter : ListAdapter<SongData, SongViewHolder>(DiffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
         return SongViewHolder(

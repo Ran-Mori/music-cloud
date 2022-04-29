@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun initView() {
-        songRecyclerView = findViewById(R.id.rv_playlist)
+        songRecyclerView = findViewById(R.id.main_playlist)
         songRecyclerView?.layoutManager = LinearLayoutManager(this)
         val adapter = SongAdapter().apply {
             submitList(

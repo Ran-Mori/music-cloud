@@ -1,90 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="70dp">
 
     <ImageView
-        android:id="@+id/top_gray_line"
+        android:id="@+id/bmp_top_gray_line"
         android:layout_width="match_parent"
         android:layout_height="2dp"
         android:background="@color/gray_background"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.cardview.widget.CardView
-        android:id="@+id/cv_cover"
+        android:id="@+id/bmp_cover_container"
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:layout_marginStart="16dp"
         app:cardCornerRadius="28dp"
         app:cardElevation="0dp"
-        app:layout_constraintBottom_toBottomOf="@id/bottom_gray_line"
+        app:layout_constraintBottom_toBottomOf="@id/bmp_bottom_gray_line"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/top_gray_line">
+        app:layout_constraintTop_toTopOf="@id/bmp_top_gray_line">
 
         <ImageView
-            android:id="@+id/iv_over"
+            android:id="@+id/bmp_over"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:background="@drawable/ic_song_cover"
             android:scaleType="centerCrop"
-            app:srcCompat="@drawable/ic_song_cover"
+            app:srcCompat="@drawable/ic_launcher_background"
             tools:ignore="ContentDescription" />
 
     </androidx.cardview.widget.CardView>
 
     <izumi.music_cloud.widget.MarqueeTextView
-        android:id="@+id/tv_title"
+        android:id="@+id/bmp_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:gravity="center_vertical"
         android:ellipsize="marquee"
+        android:gravity="center_vertical"
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
-        android:text="@string/slogan"
-        android:textColor="@color/colorTextForeground"
+        android:text="@string/app_name"
+        android:textColor="@color/color_text_foreground"
         android:textSize="18dp"
-        app:layout_constraintBottom_toBottomOf="@id/bottom_gray_line"
-        app:layout_constraintEnd_toStartOf="@+id/iv_start_or_pause"
-        app:layout_constraintStart_toEndOf="@+id/cv_cover"
-        app:layout_constraintTop_toTopOf="@id/top_gray_line"
+        app:layout_constraintBottom_toBottomOf="@id/bmp_bottom_gray_line"
+        app:layout_constraintEnd_toStartOf="@+id/bmp_start_or_pause"
+        app:layout_constraintStart_toEndOf="@+id/bmp_cover_container"
+        app:layout_constraintTop_toTopOf="@id/bmp_top_gray_line"
         tools:ignore="ContentDescription,SpUsage" />
 
     <ImageView
-        android:id="@+id/iv_start_or_pause"
+        android:id="@+id/bmp_start_or_pause"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginEnd="13dp"
+        app:layout_constraintBottom_toBottomOf="@id/bmp_bottom_gray_line"
+        app:layout_constraintEnd_toStartOf="@+id/bmp_play_next"
+        app:layout_constraintTop_toTopOf="@id/bmp_top_gray_line"
         app:srcCompat="@drawable/ic_play_song_black"
-        app:layout_constraintBottom_toBottomOf="@id/bottom_gray_line"
-        app:layout_constraintEnd_toStartOf="@+id/iv_play_next"
-        app:layout_constraintTop_toTopOf="@id/top_gray_line"
         tools:ignore="ContentDescription,VectorDrawableCompat" />
 
     <ImageView
-        android:id="@+id/iv_play_next"
+        android:id="@+id/bmp_play_next"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
         android:layout_marginEnd="16dp"
-        app:layout_constraintBottom_toBottomOf="@id/bottom_gray_line"
+        app:layout_constraintBottom_toBottomOf="@id/bmp_bottom_gray_line"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/top_gray_line"
+        app:layout_constraintTop_toTopOf="@id/bmp_top_gray_line"
         app:srcCompat="@drawable/ic_play_next_song_black"
         tools:ignore="VectorDrawableCompat" />
 
     <ImageView
-        android:id="@+id/bottom_gray_line"
+        android:id="@+id/bmp_bottom_gray_line"
         android:layout_width="match_parent"
-        android:layout_height="2dp"
+        android:layout_height="1dp"
         android:background="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
