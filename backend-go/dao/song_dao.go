@@ -20,7 +20,7 @@ func (songDao *SongDao) QueryAll() ([]entity.Song, bool) {
 	songs := make([]entity.Song, 0)
 	for rows.Next() {
 		var song entity.Song
-		err := rows.Scan(&song.Id, &song.Artist, &song.Title)
+		err := rows.Scan(&song.Id, &song.Title, &song.Artist)
 		if err != nil {
 			log.Println(err)
 			continue
