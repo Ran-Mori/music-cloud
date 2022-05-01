@@ -1,11 +1,8 @@
 <resources>
-
     <style name="Theme.MusicCloud" parent="Theme.Design.Light.NoActionBar">
-
         <item name="android:windowTranslucentStatus">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>-->
-
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

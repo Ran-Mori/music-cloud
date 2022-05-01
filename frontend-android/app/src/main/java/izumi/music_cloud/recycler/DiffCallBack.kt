@@ -1,4 +1,4 @@
-package izumi.music_cloud.adapter
+package izumi.music_cloud.recycler
 
 import androidx.recyclerview.widget.DiffUtil
 
