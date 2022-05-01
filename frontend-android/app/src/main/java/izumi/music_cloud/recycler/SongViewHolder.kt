@@ -1,7 +1,5 @@
-package izumi.music_cloud.adapter
+package izumi.music_cloud.recycler
 
-import android.app.Activity
-import android.content.Intent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -9,7 +7,6 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.facebook.drawee.view.SimpleDraweeView
 import izumi.music_cloud.R
-import izumi.music_cloud.activity.PlayingActivity
 
 class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
@@ -25,12 +22,6 @@ class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
     init {
         wholeView.setOnLongClickListener {
-            context.startActivity(Intent(context, PlayingActivity::class.java))
-            (context as? Activity)?.overridePendingTransition(
-                R.anim.anim_slide_enter_bottom,
-                R.anim.anim_no_anim
-            )
-
             return@setOnLongClickListener true
         }
 

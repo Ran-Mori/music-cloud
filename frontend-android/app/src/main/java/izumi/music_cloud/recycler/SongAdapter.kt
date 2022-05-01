@@ -1,4 +1,4 @@
-package izumi.music_cloud.adapter
+package izumi.music_cloud.recycler
 
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +19,10 @@ class SongAdapter : ListAdapter<SongData, SongViewHolder>(DiffCallback) {
 
     override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
         setAnimation(holder.itemView)
+
+        val item = currentList[position]
+        holder.songTitle.text = item.title
+        holder.songArtist.text = item.artist
     }
 
     private fun setAnimation(viewToAnimate: View) {
