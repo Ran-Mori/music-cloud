@@ -20,4 +20,10 @@ object GlobalUtil {
     }
 
     fun String.getFilePathBySongId(): String = "${App.context.filesDir.absolutePath}${File.separator}${this}.mp3"
+
+    fun String.musicExists(): Boolean {
+        if (this.length != 32) return false
+        val file = File(this.getFilePathBySongId())
+        return file.exists() && file.md5() == this
+    }
 }

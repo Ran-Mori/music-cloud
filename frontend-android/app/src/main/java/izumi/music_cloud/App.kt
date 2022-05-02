@@ -15,7 +15,6 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Fresco.initialize(this)
-
         context = applicationContext
     }
 }

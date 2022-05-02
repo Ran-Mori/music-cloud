@@ -11,6 +11,5 @@ data class SongData(
     var title: String?,
     @SerializedName("artist")
     var artist: String?,
-
-    var coverUrl: String?
+    var downloaded: Boolean = false
 )

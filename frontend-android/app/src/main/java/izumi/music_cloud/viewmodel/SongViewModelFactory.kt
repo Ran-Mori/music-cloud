@@ -6,8 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 /**
  * 工厂模式获取ViewModel，适用于有参数的ViewModel
  */
-class MainPageViewModelFactory : ViewModelProvider.Factory {
+class SongViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-        return MainPageViewModel() as T
+        return SongViewModel() as T
     }
 }

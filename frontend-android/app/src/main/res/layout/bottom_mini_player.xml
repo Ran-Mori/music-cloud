@@ -25,7 +25,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/bmp_top_gray_line">
 
-        <ImageView
+        <com.facebook.drawee.view.SimpleDraweeView
             android:id="@+id/bmp_over"
             android:layout_width="56dp"
             android:layout_height="56dp"
@@ -48,7 +48,7 @@
         android:singleLine="true"
         android:text="@string/app_name"
         android:textColor="@color/color_text_foreground"
-        android:textSize="18dp"
+        android:textSize="24dp"
         app:layout_constraintBottom_toBottomOf="@id/bmp_bottom_gray_line"
         app:layout_constraintEnd_toStartOf="@+id/bmp_start_or_pause"
         app:layout_constraintStart_toEndOf="@+id/bmp_cover_container"

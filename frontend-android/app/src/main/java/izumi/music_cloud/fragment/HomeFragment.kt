@@ -1,19 +1,26 @@
 package izumi.music_cloud.fragment
 
 import android.os.Bundle
+import android.text.TextUtils
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
-import izumi.music_cloud.MainActivity
+import com.facebook.drawee.view.SimpleDraweeView
 import izumi.music_cloud.R
+import izumi.music_cloud.callback.DownloadCallBack
+import izumi.music_cloud.callback.ViewHolderCallback
+import izumi.music_cloud.controller.MusicController
+import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.recycler.SongAdapter
-import izumi.music_cloud.viewmodel.MainPageViewModel
-import izumi.music_cloud.viewmodel.MainPageViewModelFactory
+import izumi.music_cloud.viewmodel.SongViewModel
+import izumi.music_cloud.viewmodel.SongViewModelFactory
 
 class HomeFragment : Fragment(), View.OnClickListener {
 
@@ -26,19 +33,50 @@ class HomeFragment : Fragment(), View.OnClickListener {
 
     private var songRecyclerView: RecyclerView? = null
     private var bottomMiniPlayer: View? = null
+    private var bmpCover: SimpleDraweeView? = null
+    private var bmpTitle: TextView? = null
+    private var bmpStartAndPause: ImageView? = null
+    private var bmpPlayNext: ImageView? = null
 
     private var songAdapter: SongAdapter? = null
-    private var viewModel: MainPageViewModel? = null
+    private val songModel: SongViewModel by lazy {
+        ViewModelProvider(
+            this,
+            SongViewModelFactory()
+        ).get(SongViewModel::class.java)
+    }
+
+    private val viewHolderCallBack = object : ViewHolderCallback {
+        override fun onSingleClick(index: Int) {
+            onItemClicked(index)
+        }
+
+        override fun onLongClick() {
+            switchPlayingFragment()
+        }
+
+        override fun onMenuCLick() {
+
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        initViewModel()
+        MusicController.setOnPlayCompleteCallBack {
+            // the index ready to play
+            val nextIndex = songModel.getNextIndex()
+            // set current index as index ready to play
+            songModel.setCurrentIndex(nextIndex)
+            // return the index ready to play
+            return@setOnPlayCompleteCallBack (songModel.getSongByIndex(nextIndex)?.id ?: "").getFilePathBySongId()
+        }
     }
+
 
     override fun onResume() {
         super.onResume()
-        requireActivity().window.statusBarColor = resources.getColor(R.color.second_background, null)
+        requireActivity().window.statusBarColor =
+            resources.getColor(R.color.second_background, null)
     }
 
     override fun onCreateView(
@@ -49,6 +87,10 @@ class HomeFragment : Fragment(), View.OnClickListener {
         return inflater.inflate(R.layout.fragment_home, container, false).apply {
             songRecyclerView = findViewById(R.id.main_playlist)
             bottomMiniPlayer = findViewById(R.id.main_bottom_mini_player)
+            bmpCover = findViewById(R.id.bmp_over)
+            bmpTitle = findViewById(R.id.bmp_title)
+            bmpStartAndPause = findViewById(R.id.bmp_start_or_pause)
+            bmpPlayNext = findViewById(R.id.bmp_play_next)
         }
     }
 
@@ -59,18 +101,10 @@ class HomeFragment : Fragment(), View.OnClickListener {
         initObserver()
     }
 
-    private fun initViewModel() {
-        viewModel = ViewModelProvider(
-            this,
-            MainPageViewModelFactory()
-        ).get(MainPageViewModel::class.java)
-
-        viewModel?.setPlaySong(::playSong)
-    }
-
     private fun initView() {
         songRecyclerView?.layoutManager = LinearLayoutManager(requireContext())
-        songAdapter = SongAdapter().apply {
+
+        songAdapter = SongAdapter(viewHolderCallBack).apply {
             songRecyclerView?.adapter = this
         }
 
@@ -78,41 +112,114 @@ class HomeFragment : Fragment(), View.OnClickListener {
     }
 
     private fun initObserver() {
-        viewModel?.songList?.observe(viewLifecycleOwner) {
+        songModel.songList.observe(viewLifecycleOwner) {
             songAdapter?.submitList(it)
         }
+
+        songModel.currentIndex.observe(viewLifecycleOwner) {
+            songModel.getSongByIndex(it)?.title?.let { title ->
+                bmpTitle?.text = title
+            }
+        }
+
+        songModel.nextIndex.observe(viewLifecycleOwner) {
+            val songId = songModel.getSongByIndex(it)?.id ?: ""
+            //set next to play path
+            MusicController.setReadyToPlayPath(songId.getFilePathBySongId())
+        }
+
+        songModel.error.observe(viewLifecycleOwner) {
+            it?.let {
+                Toast.makeText(requireContext(), it.msg, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        songModel.shuffle.observe(viewLifecycleOwner) {
+
+        }
+
+        songModel.pause.observe(viewLifecycleOwner) {
+
+        }
+    }
+
+    //when click a song view holder
+    private fun onItemClicked(index: Int) {
+        //the clicked item equals to current play item
+        if (index == songModel.currentIndex.value) {
+            if (songModel.pause.value == true) {
+                //pause
+                resumePlay()
+            } else {
+                //not pause
+                switchPlayingFragment()
+            }
+        } else {
+            //play a new song
+            startPlay(index)
+        }
+    }
+
+    private fun startPlay(index: Int) {
+
+        songModel.setCurrentIndex(index)
+        val songId = songModel.getSongByIndex(index)?.id ?: ""
+
+        if (songModel.getSongByIndex(index)?.downloaded == true) {
+            //song has been downloaded
+            MusicController.startPlay(songId.getFilePathBySongId())
+        } else {
+            //song haven't been downloaded
+            songModel.download(index, object : DownloadCallBack {
+
+                override fun onDownloading(percent: Int) {
+
+                }
+
+                override fun onComplete(index: Int) {
+                    MusicController.startPlay(songId.getFilePathBySongId())
+                }
+            })
+        }
+    }
+
+    private fun playNext() {
+
+    }
+
+    private fun playPrevious() {
+
+    }
+
+    private fun pausePlay() {
+
+    }
+
+    private fun resumePlay() {
+        MusicController.resumePlay()
+    }
+
+    private fun switchPlayingFragment() {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                R.anim.anim_slide_bottom_to_full,
+                R.anim.anim_slide_alpha_hide,
+                R.anim.anim_slide_alpha_show,
+                R.anim.anim_slide_full_to_bottom
+            )
+            .replace(
+                R.id.main_activity_container, PlayingFragment.newInstance(), PlayingFragment.TAG
+            )
+            .addToBackStack(PlayingFragment.TAG)
+            .commit()
     }
 
     override fun onClick(view: View?) {
         view ?: return
         when (view.id) {
             R.id.main_bottom_mini_player -> {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(
-                        R.anim.anim_slide_enter_bottom,
-                        R.anim.anim_slide_exit_bottom,
-                        R.anim.anim_slide_exit_bottom,
-                        R.anim.anim_slide_enter_bottom,
-                    )
-                    .replace(
-                        R.id.main_activity_container, PlayingFragment.newInstance(), PlayingFragment.TAG
-                    )
-                    .addToBackStack(PlayingFragment.TAG)
-                    .commit()
+                switchPlayingFragment()
             }
         }
     }
-
-    private fun playSong(songId: String) {
-        (activity as? MainActivity)?.getPlayer()?.apply {
-            reset()
-            setDataSource(songId.getFilePathBySongId())
-            prepareAsync()
-        }
-    }
-
-    fun downloadSong(songId:String) {
-        viewModel?.downloadSong(songId)
-    }
-
 }
