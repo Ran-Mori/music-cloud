@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Music Cloud</string>
     <string name="play_all">Play All</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+<!--    format string 'Downloading: 35%'-->
+    <string name="download_progress">Downloading: %1$d%%</string>
+
+    <string name="downloading_user_toast">It\'s downloading now, please wait for a while</string>
 </resources>

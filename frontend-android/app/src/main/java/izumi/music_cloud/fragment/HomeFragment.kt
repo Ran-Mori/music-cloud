@@ -1,7 +1,7 @@
 package izumi.music_cloud.fragment
 
+import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +17,7 @@ import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
 import izumi.music_cloud.callback.ViewHolderCallback
 import izumi.music_cloud.controller.MusicController
+import izumi.music_cloud.global.GlobalUtil.getCoverUrlBySongId
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.recycler.SongAdapter
 import izumi.music_cloud.viewmodel.SongViewModel
@@ -31,15 +32,17 @@ class HomeFragment : Fragment(), View.OnClickListener {
         fun newInstance() = HomeFragment()
     }
 
+    private var mainCover: SimpleDraweeView? = null
     private var songRecyclerView: RecyclerView? = null
     private var bottomMiniPlayer: View? = null
+    private var downloadProgress: TextView? = null
     private var bmpCover: SimpleDraweeView? = null
     private var bmpTitle: TextView? = null
     private var bmpStartAndPause: ImageView? = null
     private var bmpPlayNext: ImageView? = null
 
     private var songAdapter: SongAdapter? = null
-    private val songModel: SongViewModel by lazy {
+    private val songViewModel: SongViewModel by lazy {
         ViewModelProvider(
             this,
             SongViewModelFactory()
@@ -62,21 +65,12 @@ class HomeFragment : Fragment(), View.OnClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MusicController.setOnPlayCompleteCallBack {
-            // the index ready to play
-            val nextIndex = songModel.getNextIndex()
-            // set current index as index ready to play
-            songModel.setCurrentIndex(nextIndex)
-            // return the index ready to play
-            return@setOnPlayCompleteCallBack (songModel.getSongByIndex(nextIndex)?.id ?: "").getFilePathBySongId()
-        }
+        MusicController.setOnPlayCompleteCallBack { playNext() }
     }
-
 
     override fun onResume() {
         super.onResume()
-        requireActivity().window.statusBarColor =
-            resources.getColor(R.color.second_background, null)
+        requireActivity().window.statusBarColor = resources.getColor(R.color.second_background, null)
     }
 
     override fun onCreateView(
@@ -85,8 +79,10 @@ class HomeFragment : Fragment(), View.OnClickListener {
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_home, container, false).apply {
+            mainCover = findViewById(R.id.main_cover)
             songRecyclerView = findViewById(R.id.main_playlist)
             bottomMiniPlayer = findViewById(R.id.main_bottom_mini_player)
+            downloadProgress = findViewById(R.id.main_download_progress)
             bmpCover = findViewById(R.id.bmp_over)
             bmpTitle = findViewById(R.id.bmp_title)
             bmpStartAndPause = findViewById(R.id.bmp_start_or_pause)
@@ -96,7 +92,6 @@ class HomeFragment : Fragment(), View.OnClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         initView()
         initObserver()
     }
@@ -109,45 +104,88 @@ class HomeFragment : Fragment(), View.OnClickListener {
         }
 
         bottomMiniPlayer?.setOnClickListener(this)
+        bmpStartAndPause?.setOnClickListener(this)
+        bmpPlayNext?.setOnClickListener(this)
     }
 
     private fun initObserver() {
-        songModel.songList.observe(viewLifecycleOwner) {
+        songViewModel.songList.observe(viewLifecycleOwner) {
             songAdapter?.submitList(it)
+            if (it.isNotEmpty()) songViewModel.setCurrentIndex(0)
         }
 
-        songModel.currentIndex.observe(viewLifecycleOwner) {
-            songModel.getSongByIndex(it)?.title?.let { title ->
-                bmpTitle?.text = title
+        songViewModel.currentIndex.observe(viewLifecycleOwner) {
+            if (it < 0) return@observe
+            val song = songViewModel.getSongByIndex(it) ?: return@observe
+
+            song.title?.let { title -> bmpTitle?.text = title }
+            song.id?.let { id ->
+                mainCover?.setImageURI(Uri.parse(id.getCoverUrlBySongId()))
+                bmpCover?.setImageURI(Uri.parse(id.getCoverUrlBySongId()))
             }
         }
 
-        songModel.nextIndex.observe(viewLifecycleOwner) {
-            val songId = songModel.getSongByIndex(it)?.id ?: ""
-            //set next to play path
-            MusicController.setReadyToPlayPath(songId.getFilePathBySongId())
+        songViewModel.error.observe(viewLifecycleOwner) {
+            it?.let { Toast.makeText(requireContext(), it.msg, Toast.LENGTH_LONG).show() }
         }
 
-        songModel.error.observe(viewLifecycleOwner) {
-            it?.let {
-                Toast.makeText(requireContext(), it.msg, Toast.LENGTH_LONG).show()
+        songViewModel.shuffle.observe(viewLifecycleOwner) {
+
+        }
+
+        songViewModel.status.observe(viewLifecycleOwner) {
+            if (it != SongViewModel.STATUS_PLAYING) {
+                bmpStartAndPause?.setImageResource(R.drawable.ic_pause_song_black)
+            } else {
+                bmpStartAndPause?.setImageResource(R.drawable.ic_play_song_black)
             }
         }
+    }
 
-        songModel.shuffle.observe(viewLifecycleOwner) {
+    private fun startPlay(index: Int) {
+        songViewModel.setCurrentIndex(index)
+        val songId = songViewModel.getSongByIndex(index)?.id ?: ""
 
-        }
+        if (songViewModel.getSongByIndex(index)?.downloaded == true) {
+            //song has been downloaded
+            MusicController.startPlay(songId.getFilePathBySongId())
+            songViewModel.setStatus(SongViewModel.STATUS_PLAYING)
+        } else {
+            //song haven't been downloaded
+            songViewModel.setStatus(SongViewModel.STATUS_DOWNLOADING)
+            songViewModel.download(index, object : DownloadCallBack {
+                override fun onDownloading(percent: Int) {
+                    downloadProgress?.let {
+                        it.visibility = View.VISIBLE
+                        it.text = getString(R.string.download_progress, percent)
+                    }
+                }
 
-        songModel.pause.observe(viewLifecycleOwner) {
+                //do something when finish downloading
+                override fun onComplete(index: Int) {
+                    downloadProgress?.visibility = View.GONE
+                    songAdapter?.notifyItemChanged(index)
+                    songViewModel.setCurrentIndex(index)
+                    songViewModel.setStatus(SongViewModel.STATUS_PLAYING)
+                    MusicController.startPlay(songId.getFilePathBySongId())
+                }
 
+                override fun onError() {
+                    songViewModel.setStatus(SongViewModel.STATUS_NOT_INIT)
+                }
+            })
         }
     }
 
     //when click a song view holder
     private fun onItemClicked(index: Int) {
-        //the clicked item equals to current play item
-        if (index == songModel.currentIndex.value) {
-            if (songModel.pause.value == true) {
+        if (songViewModel.status.value == SongViewModel.STATUS_DOWNLOADING) {
+            showToastWhenDownloading()
+            return
+        }
+        if (index == songViewModel.currentIndex.value) {
+            //the clicked item equals to current play item
+            if (songViewModel.status.value == SongViewModel.STATUS_PAUSED) {
                 //pause
                 resumePlay()
             } else {
@@ -160,31 +198,11 @@ class HomeFragment : Fragment(), View.OnClickListener {
         }
     }
 
-    private fun startPlay(index: Int) {
-
-        songModel.setCurrentIndex(index)
-        val songId = songModel.getSongByIndex(index)?.id ?: ""
-
-        if (songModel.getSongByIndex(index)?.downloaded == true) {
-            //song has been downloaded
-            MusicController.startPlay(songId.getFilePathBySongId())
-        } else {
-            //song haven't been downloaded
-            songModel.download(index, object : DownloadCallBack {
-
-                override fun onDownloading(percent: Int) {
-
-                }
-
-                override fun onComplete(index: Int) {
-                    MusicController.startPlay(songId.getFilePathBySongId())
-                }
-            })
-        }
-    }
-
     private fun playNext() {
-
+        // the index ready to play
+        val nextIndex = songViewModel.getNextIndex()
+        // start to play
+        startPlay(nextIndex)
     }
 
     private fun playPrevious() {
@@ -192,7 +210,7 @@ class HomeFragment : Fragment(), View.OnClickListener {
     }
 
     private fun pausePlay() {
-
+        MusicController.pausePlay()
     }
 
     private fun resumePlay() {
@@ -214,9 +232,48 @@ class HomeFragment : Fragment(), View.OnClickListener {
             .commit()
     }
 
+    private fun showToastWhenDownloading() {
+        Toast.makeText(
+            requireContext(),
+            getString(R.string.downloading_user_toast),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
     override fun onClick(view: View?) {
         view ?: return
         when (view.id) {
+            R.id.bmp_play_next -> {
+                when (songViewModel.status.value) {
+                    SongViewModel.STATUS_DOWNLOADING -> {
+                        showToastWhenDownloading()
+                    }
+                    else -> playNext()
+                }
+            }
+            R.id.bmp_start_or_pause -> {
+                when (songViewModel.status.value) {
+                    SongViewModel.STATUS_DOWNLOADING -> {
+                        showToastWhenDownloading()
+                    }
+                    SongViewModel.STATUS_NOT_INIT -> {
+                        val currentIndex = songViewModel.currentIndex.value ?: -1
+                        if (currentIndex != -1) {
+                            startPlay(currentIndex)
+                        } else {
+                            playNext()
+                        }
+                    }
+                    SongViewModel.STATUS_PLAYING -> {
+                        pausePlay()
+                        songViewModel.setStatus(SongViewModel.STATUS_PAUSED)
+                    }
+                    SongViewModel.STATUS_PAUSED -> {
+                        resumePlay()
+                        songViewModel.setStatus(SongViewModel.STATUS_PLAYING)
+                    }
+                }
+            }
             R.id.main_bottom_mini_player -> {
                 switchPlayingFragment()
             }

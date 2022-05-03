@@ -1,5 +1,6 @@
 package izumi.music_cloud.recycler
 
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +9,7 @@ import android.view.animation.AnimationUtils
 import androidx.recyclerview.widget.ListAdapter
 import izumi.music_cloud.R
 import izumi.music_cloud.callback.ViewHolderCallback
+import izumi.music_cloud.global.GlobalUtil.getCoverUrlBySongId
 
 class SongAdapter(private val holderCallback: ViewHolderCallback) : ListAdapter<SongData, SongViewHolder>(DiffCallback) {
 
@@ -24,6 +26,7 @@ class SongAdapter(private val holderCallback: ViewHolderCallback) : ListAdapter<
         val item = currentList[position]
         holder.songTitle.text = item.title
         holder.songArtist.text = item.artist
+        holder.songCover.setImageURI(Uri.parse(item.id?.getCoverUrlBySongId()))
         holder.hasDownloaded.visibility = if (item.downloaded) {
             View.VISIBLE
         } else {

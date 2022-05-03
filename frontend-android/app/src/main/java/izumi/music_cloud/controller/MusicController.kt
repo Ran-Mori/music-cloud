@@ -3,11 +3,11 @@ package izumi.music_cloud.controller
 import android.media.MediaPlayer
 import android.util.Log
 import izumi.music_cloud.global.GlobalConst
+import java.io.IOException
 
 object MusicController {
 
-    private var readyToPlayPath: String? = null
-    private var onPlayCompleteCallBack: (() -> String)? = null
+    private var onPlayCompleteCallBack: (() -> Unit)? = null
 
     private val player by lazy {
         MediaPlayer().apply {
@@ -22,21 +22,23 @@ object MusicController {
             }
 
             setOnCompletionListener {
-                val path = onPlayCompleteCallBack?.invoke()
-                startPlay(path)
+                onPlayCompleteCallBack?.invoke()
             }
         }
-    }
-
-    fun setReadyToPlayPath(filePath: String) {
-        readyToPlayPath = filePath
     }
 
     fun startPlay(filePath: String?) {
         filePath ?: return
         player.reset()
-        player.setDataSource(filePath)
-        player.prepareAsync()
+        try {
+            player.setDataSource(filePath)
+            player.prepareAsync()
+        } catch (e: IOException) {
+            Log.d(GlobalConst.LOG_TAG, "setDatasource catch an IOException")
+        } catch (e: IllegalArgumentException) {
+            Log.d(GlobalConst.LOG_TAG, "setDatasource catch an IllegalArgumentException")
+        }
+
     }
 
     fun playPrevious() {
@@ -47,7 +49,7 @@ object MusicController {
         if (player.isPlaying) player.pause()
     }
 
-    fun setOnPlayCompleteCallBack(callback: () -> String) {
+    fun setOnPlayCompleteCallBack(callback: () -> Unit) {
         onPlayCompleteCallBack = callback
     }
 

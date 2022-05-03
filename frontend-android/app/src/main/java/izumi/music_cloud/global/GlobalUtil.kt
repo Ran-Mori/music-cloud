@@ -5,7 +5,7 @@ import java.io.File
 import java.security.MessageDigest
 
 object GlobalUtil {
-    fun File.md5(): String {
+    private fun File.md5(): String {
         val md = MessageDigest.getInstance("MD5")
         return this.inputStream().use { fis ->
             val buffer = ByteArray(8192)
@@ -26,4 +26,7 @@ object GlobalUtil {
         val file = File(this.getFilePathBySongId())
         return file.exists() && file.md5() == this
     }
+
+    fun String.getCoverUrlBySongId(): String = "${GlobalConst.BASE_URL}/song/cover/${this}"
+
 }

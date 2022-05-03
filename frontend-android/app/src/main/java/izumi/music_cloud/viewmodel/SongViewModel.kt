@@ -9,12 +9,19 @@ import izumi.music_cloud.recycler.SongData
 import kotlin.random.Random
 
 class SongViewModel : ViewModel() {
+
+    companion object {
+        const val STATUS_NOT_INIT = 0
+        const val STATUS_PLAYING = 1
+        const val STATUS_PAUSED = 2
+        const val STATUS_DOWNLOADING = 3
+    }
+
     private val _songList = MutableLiveData<List<SongData>>()
     private val _currentIndex = MutableLiveData<Int>()
-    private val _nextIndex = MutableLiveData<Int>()
     private val _error = MutableLiveData<Error?>()
     private val _shuffle = MutableLiveData<Boolean>()
-    private val _pause = MutableLiveData<Boolean>()
+    private val _status = MutableLiveData<Int>()
 
     private val mainModel by lazy { SongModel() }
 
@@ -24,40 +31,30 @@ class SongViewModel : ViewModel() {
     val currentIndex: LiveData<Int>
         get() = _currentIndex
 
-    val nextIndex: LiveData<Int>
-        get() = _nextIndex
-
     val error: LiveData<Error?>
         get() = _error
 
     val shuffle: LiveData<Boolean>
         get() = _shuffle
 
-    val pause: LiveData<Boolean>
-        get() = _pause
+    val status: LiveData<Int>
+        get() = _status
 
     init {
-        mainModel.getSongList(_songList, _error)
         _currentIndex.value = -1
+        _status.value = STATUS_NOT_INIT
         _error.value = null
         _shuffle.value = false
+        mainModel.getSongList(_songList, _error)
     }
 
+    // download music
     fun download(index: Int, callBack: DownloadCallBack? = null) {
         mainModel.downloadSong(_songList, _error, index, callBack)
     }
 
     fun setCurrentIndex(currentIndex: Int) {
         _currentIndex.value = currentIndex
-    }
-
-    fun getSongIdByIndex(index: Int): String {
-        val size = _songList.value?.size ?: 0
-        return if (size <= 0 || index < 0 || index >= size) {
-            ""
-        } else {
-            songList.value?.get(index)?.id ?: ""
-        }
     }
 
     fun getSongByIndex(index: Int): SongData? {
@@ -69,15 +66,23 @@ class SongViewModel : ViewModel() {
         }
     }
 
-    fun setPause(pause: Boolean) {
-        _pause.value = pause
+    fun setStatus(status: Int) {
+        _status.value = status
     }
 
     fun getNextIndex(): Int {
         val size = _songList.value?.size ?: return -1
         return when {
             size <= 0 -> -1
-            _shuffle.value == true -> Random(0).nextInt(size)
+            _shuffle.value == true -> {
+                val index = Random(0).nextInt(size)
+                if (index == _currentIndex.value) {
+                    // shuffle next equals current play
+                    getNextIndex()
+                } else {
+                    index
+                }
+            }
             _shuffle.value == false -> ((_currentIndex.value ?: 0) + 1) % size
             else -> -1
         }
