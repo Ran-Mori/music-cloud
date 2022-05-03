@@ -11,6 +11,7 @@ import (
 	"musiccloud/entity"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ func (s *SongController) Router(router *httprouter.Router) {
 	router.GET("/songs", s.queryAll)
 	router.DELETE("/song/:id", s.deleteOneById)
 	router.GET("/song/download/:id/", s.downLoadMusic)
-	router.GET("/song/picture/download/:id/", s.downloadPicture)
+	router.GET("/song/cover/:id/", s.downloadCover)
 	router.GET("/song/query/:id", s.queryOneById)
 	router.POST("/song/upload", s.upload)
 	router.GET("/songs/like/:keyword", s.queryLike)
@@ -145,6 +146,9 @@ func (s *SongController) downLoadMusic(w http.ResponseWriter, r *http.Request, p
 	}
 	defer file.Close()
 
+	if fs, err := file.Stat(); err == nil {
+		w.Header().Set("content-length", strconv.FormatInt(fs.Size(), 10))
+	}
 	//磁盘文件是完整路径如'/home/music/43a0298b5039248ed09324f.mp3'
 	//设置为强制下载
 	w.Header().Set("content-type", "application/force-download")
@@ -157,7 +161,7 @@ func (s *SongController) downLoadMusic(w http.ResponseWriter, r *http.Request, p
 	io.Copy(w, file)
 }
 
-func (s *SongController) downloadPicture(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (s *SongController) downloadCover(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	md5IdStr := params.ByName("id")
 
 	filePath := strings.Join([]string{basic.GetUserHomeDir(), basic.MusicStorePath, md5IdStr, ".png"}, "")
@@ -171,10 +175,11 @@ func (s *SongController) downloadPicture(w http.ResponseWriter, r *http.Request,
 	defer file.Close()
 
 	//磁盘文件是完整路径如'/home/music/43a0298b5039248ed09324f.png'
-	w.Header().Set("content-type", "application/force-download")
+	w.Header().Set("content-type", "image/gif")
 	w.Header().Set("cache-control", "max-age=31536000")
-	length := len(file.Name())
-	w.Header().Set("content-disposition", strings.Join([]string{"attachment;fileName=", file.Name()[length-36 : len(file.Name())]}, ""))
+	//don't need to download, so not to set content-disposition
+	//length := len(file.Name())
+	//w.Header().Set("content-disposition", strings.Join([]string{"attachment;fileName=", file.Name()[length-36 : len(file.Name())]}, ""))
 	io.Copy(w, file)
 }
 
