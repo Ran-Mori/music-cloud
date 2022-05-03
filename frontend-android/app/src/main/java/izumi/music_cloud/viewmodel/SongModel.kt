@@ -27,6 +27,8 @@ class SongModel {
 
     private val handler = Handler(Looper.getMainLooper())
 
+    private var isDownloading: Boolean = false
+
     private fun updateDownloadStatus(songList: List<SongData>) {
         for (song in songList) {
             val id = song.id ?: continue
@@ -57,22 +59,29 @@ class SongModel {
         callBack: DownloadCallBack? = null
     ) {
         val songId = _songList.value?.get(index)?.id ?: return
-        if (songId.musicExists()) return
+        if (isDownloading) return
 
         SongService.downloadSong(songId)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                isDownloading = true
+            }
             .doOnError {
                 Log.d(GlobalConst.LOG_TAG, "downloadSong do on error")
                 _error.value = Error.DOWNLOAD_SONG_ERROR
+                callBack?.onError()
+            }
+            .doOnTerminate {
+                isDownloading = false
             }
             .subscribe {
                 thread {
                     Log.d(GlobalConst.LOG_TAG, "downloadSong do on next")
 
                     val file = File(songId.getFilePathBySongId()).apply {
-                        if (this.exists()) this.delete()
-                        this.createNewFile()
+                        if (exists()) delete()
+                        createNewFile()
                     }
 
                     val uri = FileProvider.getUriForFile(
@@ -82,6 +91,7 @@ class SongModel {
                     )
 
                     val input = it.body()?.byteStream() ?: return@thread
+                    val contentLength: Long = it.raw().body?.contentLength() ?: Long.MAX_VALUE
 
                     Log.d(GlobalConst.LOG_TAG, "downloadSong start")
 
@@ -89,22 +99,23 @@ class SongModel {
                         output ?: return@thread
                         val buffer = ByteArray(4 * 1024)
                         var read: Int
+                        var totalRead = 0.0
                         while (input.read(buffer).also { read = it } != -1) {
                             Log.d(GlobalConst.LOG_TAG, "downloadSong downloading")
+                            totalRead += read
                             output.write(buffer, 0, read)
-                            callBack?.onDownloading(50)
+                            //show download percent
+                            handler.sendMessage(Message.obtain(handler) {
+                                callBack?.onDownloading(((totalRead / contentLength) * 100).toInt())
+                            })
                         }
                         output.flush()
-                        callBack?.onDownloading(100)
                     }
                     Log.d(GlobalConst.LOG_TAG, "downloadSong finish")
 
                     handler.sendMessage(Message.obtain(handler) {
                         Log.d(GlobalConst.LOG_TAG, "downloadSong handler do")
-                        _songList.value?.apply {
-                            get(index).downloaded = true
-                            _songList.value = this
-                        }
+                        _songList.value?.get(index)?.downloaded = true
                         callBack?.onComplete(index)
                     })
                 }

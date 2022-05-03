@@ -5,4 +5,6 @@ interface DownloadCallBack {
     fun onDownloading(percent: Int)
 
     fun onComplete(index: Int)
+
+    fun onError()
 }

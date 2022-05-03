@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:fresco="http://schemas.android.com/apk/res-auto"
+    android:background="@color/white"
     android:layout_width="match_parent"
-
     android:layout_height="match_parent">
 
     <androidx.cardview.widget.CardView
@@ -16,12 +18,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
+        <com.facebook.drawee.view.SimpleDraweeView
             android:id="@+id/playing_cover"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scaleType="centerCrop"
-            app:srcCompat="@drawable/ic_launcher_background" />
+            fresco:actualImageScaleType="centerCrop"
+            fresco:placeholderImageScaleType="centerCrop"
+            fresco:placeholderImage="@drawable/default_cover"
+            fresco:failureImage="@drawable/default_cover" />
     </androidx.cardview.widget.CardView>
 
     <izumi.music_cloud.widget.MarqueeTextView
@@ -90,7 +94,7 @@
         android:layout_width="35dp"
         android:layout_height="80dp"
         android:layout_marginBottom="60dp"
-        android:src="@drawable/ic_play_song_black"
+        android:src="@drawable/ic_pause_song_black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/playing_play_next"
         app:layout_constraintStart_toEndOf="@id/playing_play_previous" />
