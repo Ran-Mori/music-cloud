@@ -55,6 +55,7 @@ class SongModel {
     fun downloadSong(
         _songList: MutableLiveData<List<SongData>>,
         _error: MutableLiveData<Error?>,
+        _downloadProgress: MutableLiveData<Int>,
         index: Int,
         callBack: DownloadCallBack? = null
     ) {
@@ -106,7 +107,7 @@ class SongModel {
                             output.write(buffer, 0, read)
                             //show download percent
                             handler.sendMessage(Message.obtain(handler) {
-                                callBack?.onDownloading(((totalRead / contentLength) * 100).toInt())
+                                _downloadProgress.value = ((totalRead / contentLength) * 100).toInt()
                             })
                         }
                         output.flush()

@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:fresco="http://schemas.android.com/apk/res-auto"
-    android:background="@color/white"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/white">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/playing_cover_container"
@@ -23,9 +22,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             fresco:actualImageScaleType="centerCrop"
-            fresco:placeholderImageScaleType="centerCrop"
-            fresco:placeholderImage="@drawable/default_cover"
-            fresco:failureImage="@drawable/default_cover" />
+            fresco:failureImage="@drawable/default_cover"
+            fresco:failureImageScaleType="centerCrop"
+            fresco:placeholderImage="@drawable/ic_launcher"
+            fresco:placeholderImageScaleType="centerCrop" />
     </androidx.cardview.widget.CardView>
 
     <izumi.music_cloud.widget.MarqueeTextView
@@ -40,8 +40,8 @@
         android:marqueeRepeatLimit="marquee_forever"
         android:singleLine="true"
         android:text="@string/app_name"
-        android:textColor="@color/color_text_foreground"
-        android:textSize="22sp"
+        android:textColor="@color/black"
+        android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/playing_cover_container" />
@@ -51,14 +51,14 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="30dp"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="3dp"
         android:layout_marginEnd="30dp"
         android:ellipsize="marquee"
         android:gravity="center_vertical"
         android:singleLine="true"
         android:text="@string/app_name"
-        android:textColor="@color/color_text_foreground"
-        android:textSize="14sp"
+        android:textColor="@color/artist_text_color"
+        android:textSize="20sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/playing_title" />
@@ -66,34 +66,62 @@
     <SeekBar
         android:id="@+id/playing_seek_bar"
         android:layout_width="0dp"
-        android:layout_height="4dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="15dp"
-        android:layout_marginEnd="20dp"
-        android:maxHeight="2dp"
-        android:minHeight="4dp"
+        android:layout_height="wrap_content"
+        android:maxHeight="3dp"
+        android:minHeight="3dp"
         android:progressDrawable="@drawable/background_seek_bar_music"
         android:splitTrack="false"
         android:thumb="@drawable/background_seek_bar_thumb"
+        android:max="100"
+        android:min="0"
+        android:layout_marginStart="15dp"
+        android:paddingTop="15dp"
+        android:paddingBottom="5dp"
+        android:layout_marginEnd="15dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/playing_artist" />
 
+    <TextView
+        android:id="@+id/playing_current_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/duration_default_time"
+        android:textSize="12sp"
+        android:textColor="@color/progress_bar"
+        android:layout_marginStart="30dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/playing_seek_bar" />
+
+    <TextView
+        android:id="@+id/playing_end_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/duration_default_time"
+        android:textSize="12sp"
+        android:textColor="@color/progress_bar"
+        android:layout_marginEnd="30dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/playing_seek_bar" />
+
+
     <ImageView
         android:id="@+id/playing_play_previous"
-        android:layout_width="50dp"
-        android:layout_height="80dp"
+        android:layout_width="53dp"
+        android:layout_height="30dp"
         android:layout_marginStart="50dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="110dp"
+        android:scaleType="centerCrop"
         android:src="@drawable/play_previous_black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <ImageView
         android:id="@+id/playing_play_and_pause"
-        android:layout_width="35dp"
-        android:layout_height="80dp"
-        android:layout_marginBottom="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginBottom="105dp"
+        android:scaleType="centerCrop"
         android:src="@drawable/ic_pause_song_black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/playing_play_next"
@@ -101,10 +129,11 @@
 
     <ImageView
         android:id="@+id/playing_play_next"
-        android:layout_width="50dp"
-        android:layout_height="80dp"
+        android:layout_width="53dp"
+        android:layout_height="30dp"
         android:layout_marginEnd="50dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginBottom="110dp"
+        android:scaleType="centerCrop"
         android:src="@drawable/ic_play_next_song_black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

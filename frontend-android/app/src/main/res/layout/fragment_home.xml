@@ -44,7 +44,9 @@
                         android:layout_height="match_parent"
                         fresco:actualImageScaleType="centerCrop"
                         fresco:placeholderImageScaleType="centerCrop"
-                        fresco:placeholderImage="@drawable/default_cover"
+                        fresco:failureImageScaleType="centerCrop"
+                        fresco:placeholderImage="@drawable/ic_launcher"
+                        fresco:failureImage="@drawable/default_cover"
                         android:src="@drawable/default_cover" />
 
                 </androidx.cardview.widget.CardView>
@@ -88,7 +90,8 @@
                 <TextView
                     android:id="@+id/main_text_play_all"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
                     android:layout_marginStart="10dp"
                     android:layout_marginBottom="1dp"
                     android:fontFamily="@font/tapestry_regular"

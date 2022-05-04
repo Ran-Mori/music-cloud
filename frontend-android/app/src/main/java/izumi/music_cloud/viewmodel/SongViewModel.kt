@@ -22,6 +22,9 @@ class SongViewModel : ViewModel() {
     private val _error = MutableLiveData<Error?>()
     private val _shuffle = MutableLiveData<Boolean>()
     private val _status = MutableLiveData<Int>()
+    private val _downloadProgress = MutableLiveData<Int>()
+    private var _currentMilliSec = MutableLiveData<Int>()
+    private var _endMilliSec = MutableLiveData<Int>()
 
     private val mainModel by lazy { SongModel() }
 
@@ -40,21 +43,40 @@ class SongViewModel : ViewModel() {
     val status: LiveData<Int>
         get() = _status
 
+    val downloadProgress: LiveData<Int>
+        get() = _downloadProgress
+
+    val currentMilliSec: LiveData<Int>
+        get() = _currentMilliSec
+
+    val endMilliSec: LiveData<Int>
+        get() = _endMilliSec
+
     init {
+        mainModel.getSongList(_songList, _error)
         _currentIndex.value = -1
-        _status.value = STATUS_NOT_INIT
         _error.value = null
         _shuffle.value = false
-        mainModel.getSongList(_songList, _error)
+        _status.value = STATUS_NOT_INIT
+        _currentMilliSec.value = 0
+        _endMilliSec.value = 0
     }
 
     // download music
     fun download(index: Int, callBack: DownloadCallBack? = null) {
-        mainModel.downloadSong(_songList, _error, index, callBack)
+        mainModel.downloadSong(_songList, _error, _downloadProgress, index, callBack)
     }
 
     fun setCurrentIndex(currentIndex: Int) {
         _currentIndex.value = currentIndex
+    }
+
+    fun setCurrentMilliSec(milliSec: Int) {
+        _currentMilliSec.value = milliSec
+    }
+
+    fun setEndMilliSec(milliSec: Int) {
+        _endMilliSec.value = milliSec
     }
 
     fun getSongByIndex(index: Int): SongData? {
