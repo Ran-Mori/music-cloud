@@ -41,8 +41,12 @@ object MusicController {
 
     }
 
-    fun playPrevious() {
+    fun getDuration() = player.duration
 
+    fun getPosition() = player.currentPosition
+
+    fun seekTo(milliSec: Int) {
+        player.seekTo(milliSec)
     }
 
     fun pausePlay() {

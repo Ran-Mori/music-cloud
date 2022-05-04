@@ -3,6 +3,7 @@ package izumi.music_cloud.global
 import izumi.music_cloud.App
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 object GlobalUtil {
     private fun File.md5(): String {
@@ -28,5 +29,23 @@ object GlobalUtil {
     }
 
     fun String.getCoverUrlBySongId(): String = "${GlobalConst.BASE_URL}/song/cover/${this}"
+
+    fun Int.milliSecToMinute(): String {
+        val minute = TimeUnit.MILLISECONDS.toMinutes(this.toLong())
+        return if (minute < 10) {
+            "0${minute}"
+        } else {
+            minute.toString()
+        }
+    }
+
+    fun Int.milliSecToSecond(): String {
+        val second = (this / 1000) % 60
+        return if (second < 10) {
+            "0${second}"
+        } else {
+            second.toString()
+        }
+    }
 
 }
