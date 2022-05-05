@@ -14,6 +14,7 @@ class SongViewModel : ViewModel() {
         const val STATUS_NOT_INIT = 0
         const val STATUS_PLAYING = 1
         const val STATUS_PAUSED = 2
+
         const val STATUS_DOWNLOADING = 3
     }
 
@@ -21,7 +22,8 @@ class SongViewModel : ViewModel() {
     private val _currentIndex = MutableLiveData<Int>()
     private val _error = MutableLiveData<Error?>()
     private val _shuffle = MutableLiveData<Boolean>()
-    private val _status = MutableLiveData<Int>()
+    private val _playingStatus = MutableLiveData<Int>()
+    private val _isDownloading = MutableLiveData<Boolean>()
     private val _downloadProgress = MutableLiveData<Int>()
     private var _currentMilliSec = MutableLiveData<Int>()
     private var _endMilliSec = MutableLiveData<Int>()
@@ -40,8 +42,11 @@ class SongViewModel : ViewModel() {
     val shuffle: LiveData<Boolean>
         get() = _shuffle
 
-    val status: LiveData<Int>
-        get() = _status
+    val playingStatus: LiveData<Int>
+        get() = _playingStatus
+
+    val isDownloading: LiveData<Boolean>
+        get() = _isDownloading
 
     val downloadProgress: LiveData<Int>
         get() = _downloadProgress
@@ -57,7 +62,7 @@ class SongViewModel : ViewModel() {
         _currentIndex.value = -1
         _error.value = null
         _shuffle.value = false
-        _status.value = STATUS_NOT_INIT
+        _playingStatus.value = STATUS_NOT_INIT
         _currentMilliSec.value = 0
         _endMilliSec.value = 0
     }
@@ -69,6 +74,14 @@ class SongViewModel : ViewModel() {
 
     fun setCurrentIndex(currentIndex: Int) {
         _currentIndex.value = currentIndex
+    }
+
+    fun setPlayingStatus(playingStatus: Int) {
+        _playingStatus.value = playingStatus
+    }
+
+    fun setIsDownloading(isDownloading: Boolean) {
+        _isDownloading.value = isDownloading
     }
 
     fun setCurrentMilliSec(milliSec: Int) {
@@ -86,10 +99,6 @@ class SongViewModel : ViewModel() {
         } else {
             songList.value?.get(index)
         }
-    }
-
-    fun setStatus(status: Int) {
-        _status.value = status
     }
 
     fun getNextIndex(): Int {

@@ -35,6 +35,7 @@ class PlayingFragment : BaseFragment() {
     }
 
     private var playingCover: SimpleDraweeView? = null
+    private var downloadProgress: TextView? = null
     private var titleTextView: TextView? = null
     private var artistTextView: TextView? = null
     private var playPrevious: ImageView? = null
@@ -44,9 +45,6 @@ class PlayingFragment : BaseFragment() {
     private var currentTimeText: TextView? = null
     private var endTimeText: TextView? = null
 
-    private val handler = Handler(Looper.getMainLooper())
-
-    //handler task to update every second
     private val updateProgressRunnable: Runnable = object : Runnable {
         override fun run() {
             Log.d(GlobalConst.LOG_TAG, "updateProgressRunnable run, position is ${getPosition()}")
@@ -61,17 +59,19 @@ class PlayingFragment : BaseFragment() {
         }
     }
 
-    override fun resetDownloadCallBack(): DownloadCallBack = object : DownloadCallBack {
+    override fun resetSingleDownloadCallBack(): DownloadCallBack = object : DownloadCallBack {
 
         override fun onComplete(index: Int) {
             val songId = songViewModel.getSongByIndex(index)?.id ?: ""
             songViewModel.setCurrentIndex(index)
-            songViewModel.setStatus(SongViewModel.STATUS_PLAYING)
+            songViewModel.setPlayingStatus(SongViewModel.STATUS_PLAYING)
+            songViewModel.setIsDownloading(false)
             MusicController.startPlay(songId.getFilePathBySongId())
         }
 
         override fun onError() {
-            songViewModel.setStatus(SongViewModel.STATUS_NOT_INIT)
+            songViewModel.setPlayingStatus(SongViewModel.STATUS_NOT_INIT)
+            songViewModel.setIsDownloading(false)
         }
     }
 
@@ -87,6 +87,7 @@ class PlayingFragment : BaseFragment() {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_playing, container, false)?.apply {
             playingCover = findViewById(R.id.playing_cover)
+            downloadProgress = findViewById(R.id.playing_download_progress)
             titleTextView = findViewById(R.id.playing_title)
             artistTextView = findViewById(R.id.playing_artist)
             playPrevious = findViewById(R.id.playing_play_previous)
@@ -112,7 +113,7 @@ class PlayingFragment : BaseFragment() {
 
         //not allow to touch seekbar when music isn't playing
         seekBar?.setOnTouchListener { _, _ ->
-            return@setOnTouchListener songViewModel.status.value != SongViewModel.STATUS_PLAYING
+            return@setOnTouchListener songViewModel.playingStatus.value != SongViewModel.STATUS_PLAYING
         }
 
         seekBar?.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -143,10 +144,11 @@ class PlayingFragment : BaseFragment() {
             songViewModel.setEndMilliSec(getDuration())
         }
 
-        songViewModel.status.observe(viewLifecycleOwner) {
+        songViewModel.playingStatus.observe(viewLifecycleOwner) {
             if (it == SongViewModel.STATUS_PLAYING) {
                 startAndPause?.setImageResource(R.drawable.ic_play_song_black)
 
+                //handler task to update every second
                 //handler to post a runnable
                 handler.postDelayed(updateProgressRunnable, HANDLER_DELAY_MILLI_SEC)
             } else {
@@ -155,6 +157,14 @@ class PlayingFragment : BaseFragment() {
                 //handler to remove a runnable
                 handler.removeCallbacks(updateProgressRunnable)
             }
+        }
+
+        songViewModel.isDownloading.observe(viewLifecycleOwner) {
+            downloadProgress?.visibility = if (it) View.VISIBLE else View.GONE
+        }
+
+        songViewModel.downloadProgress.observe(viewLifecycleOwner) { percent ->
+            downloadProgress?.text = getString(R.string.download_progress, percent)
         }
 
         songViewModel.currentMilliSec.observe(viewLifecycleOwner) {

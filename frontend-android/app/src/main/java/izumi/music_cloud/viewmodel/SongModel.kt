@@ -80,9 +80,17 @@ class SongModel {
                 thread {
                     Log.d(GlobalConst.LOG_TAG, "downloadSong do on next")
 
-                    val file = File(songId.getFilePathBySongId()).apply {
-                        if (exists()) delete()
-                        createNewFile()
+                    val path = songId.getFilePathBySongId()
+                    val file = File(path).apply {
+                        if (exists() && path.musicExists()) {
+                            handler.post {
+                                callBack?.onComplete(index)
+                            }
+                            return@thread
+                        } else {
+                            delete()
+                            createNewFile()
+                        }
                     }
 
                     val uri = FileProvider.getUriForFile(
