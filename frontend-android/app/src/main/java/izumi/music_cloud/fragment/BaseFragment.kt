@@ -1,6 +1,8 @@
 package izumi.music_cloud.fragment
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -20,15 +22,17 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
         ).get(SongViewModel::class.java)
     }
 
-    private var downloadCallBack: DownloadCallBack? = null
+    protected val handler = Handler(Looper.getMainLooper())
+
+    private var singleDownloadCallBack: DownloadCallBack? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MusicController.setOnPlayCompleteCallBack { playNext() }
-        downloadCallBack = resetDownloadCallBack()
+        singleDownloadCallBack = resetSingleDownloadCallBack()
     }
 
-    abstract fun resetDownloadCallBack(): DownloadCallBack
+    abstract fun resetSingleDownloadCallBack(): DownloadCallBack
 
     protected fun startPlay(index: Int) {
         songViewModel.setCurrentIndex(index)
@@ -37,11 +41,12 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
         if (songViewModel.getSongByIndex(index)?.downloaded == true) {
             //song has been downloaded
             MusicController.startPlay(songId.getFilePathBySongId())
-            songViewModel.setStatus(SongViewModel.STATUS_PLAYING)
+            songViewModel.setPlayingStatus(SongViewModel.STATUS_PLAYING)
         } else {
             //song haven't been downloaded
-            songViewModel.setStatus(SongViewModel.STATUS_DOWNLOADING)
-            songViewModel.download(index, downloadCallBack)
+            songViewModel.setPlayingStatus(SongViewModel.STATUS_NOT_INIT)
+            songViewModel.setIsDownloading(true)
+            songViewModel.download(index, singleDownloadCallBack)
         }
     }
 
@@ -69,35 +74,37 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
     }
 
     protected fun onPauseOrStartClick() {
-        when (songViewModel.status.value) {
-            SongViewModel.STATUS_DOWNLOADING -> {
-                showToastWhenDownloading()
-            }
-            SongViewModel.STATUS_NOT_INIT -> {
-                val currentIndex = songViewModel.currentIndex.value ?: -1
-                if (currentIndex != -1) {
-                    startPlay(currentIndex)
-                } else {
-                    playNext()
-                }
-            }
+        when (songViewModel.playingStatus.value) {
             SongViewModel.STATUS_PLAYING -> {
                 pausePlay()
-                songViewModel.setStatus(SongViewModel.STATUS_PAUSED)
+                songViewModel.setPlayingStatus(SongViewModel.STATUS_PAUSED)
             }
             SongViewModel.STATUS_PAUSED -> {
                 resumePlay()
-                songViewModel.setStatus(SongViewModel.STATUS_PLAYING)
+                songViewModel.setPlayingStatus(SongViewModel.STATUS_PLAYING)
+            }
+            SongViewModel.STATUS_NOT_INIT -> {
+                if (songViewModel.isDownloading.value == true) {
+                    // not allow to play potentially undownloaded music when downloading
+                    showToastWhenDownloading()
+                } else {
+                    // play any music including undownloaed music when not downloading
+                    val currentIndex = songViewModel.currentIndex.value ?: -1
+                    if (currentIndex != -1) {
+                        startPlay(currentIndex)
+                    } else {
+                        playNext()
+                    }
+                }
             }
         }
     }
 
     protected fun onPlayNextClick() {
-        when (songViewModel.status.value) {
-            SongViewModel.STATUS_DOWNLOADING -> {
-                showToastWhenDownloading()
-            }
-            else -> playNext()
+        if(songViewModel.isDownloading.value == true) {
+            showToastWhenDownloading()
+        } else {
+            playNext()
         }
     }
 
