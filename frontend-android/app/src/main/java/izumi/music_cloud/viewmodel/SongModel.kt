@@ -27,7 +27,8 @@ class SongModel {
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private var isDownloading: Boolean = false
+    // make it to be volatile, as it will be modify in other threads
+    @Volatile private var  isDownloading: Boolean = false
 
     private fun updateDownloadStatus(songList: List<SongData>) {
         for (song in songList) {
@@ -72,25 +73,25 @@ class SongModel {
                 Log.d(GlobalConst.LOG_TAG, "downloadSong do on error")
                 _error.value = Error.DOWNLOAD_SONG_ERROR
                 callBack?.onError()
-            }
-            .doOnTerminate {
                 isDownloading = false
             }
             .subscribe {
+                // do on next will immediately return as 'thread{}'
                 thread {
                     Log.d(GlobalConst.LOG_TAG, "downloadSong do on next")
 
                     val path = songId.getFilePathBySongId()
-                    val file = File(path).apply {
-                        if (exists() && path.musicExists()) {
-                            handler.post {
-                                callBack?.onComplete(index)
-                            }
-                            return@thread
-                        } else {
-                            delete()
-                            createNewFile()
+                    val file = File(path)
+                    if (file.exists() && songId.musicExists()) {
+                        handler.post {
+                            callBack?.onComplete(index)
                         }
+                        // modify inDownloading in anther thread
+                        isDownloading = false
+                        return@thread
+                    } else {
+                        file.delete()
+                        file.createNewFile()
                     }
 
                     val uri = FileProvider.getUriForFile(
@@ -121,6 +122,9 @@ class SongModel {
                         output.flush()
                     }
                     Log.d(GlobalConst.LOG_TAG, "downloadSong finish")
+
+                    // modify inDownloading in anther thread
+                    isDownloading = false
 
                     handler.sendMessage(Message.obtain(handler) {
                         Log.d(GlobalConst.LOG_TAG, "downloadSong handler do")
