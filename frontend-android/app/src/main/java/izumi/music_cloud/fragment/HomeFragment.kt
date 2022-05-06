@@ -213,6 +213,8 @@ class HomeFragment : BaseFragment() {
                         songViewModel.setIsDownloading(false)
 
                         while (++downloadingIndex != size && !songList[downloadingIndex].downloaded) {
+                            //set isDownloading = true when post a downloading runnable
+                            songViewModel.setIsDownloading(true)
                             handler.post(that)
                             break
                         }
@@ -225,6 +227,8 @@ class HomeFragment : BaseFragment() {
                 })
             }
         }
+        //set isDownloading = true when post a downloading runnable
+        songViewModel.setIsDownloading(true)
         handler.post(runnable)
     }
 

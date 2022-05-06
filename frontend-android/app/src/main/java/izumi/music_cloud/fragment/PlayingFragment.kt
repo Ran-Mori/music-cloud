@@ -3,8 +3,6 @@ package izumi.music_cloud.fragment
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -160,7 +158,8 @@ class PlayingFragment : BaseFragment() {
         }
 
         songViewModel.isDownloading.observe(viewLifecycleOwner) {
-            downloadProgress?.visibility = if (it) View.VISIBLE else View.GONE
+            // don't set it's visibility to be GONE, as it will change the UI
+            downloadProgress?.visibility = if (it) View.VISIBLE else View.INVISIBLE
         }
 
         songViewModel.downloadProgress.observe(viewLifecycleOwner) { percent ->

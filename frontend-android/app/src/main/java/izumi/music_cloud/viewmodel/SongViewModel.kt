@@ -63,6 +63,7 @@ class SongViewModel : ViewModel() {
         _error.value = null
         _shuffle.value = false
         _playingStatus.value = STATUS_NOT_INIT
+        _isDownloading.value = false
         _currentMilliSec.value = 0
         _endMilliSec.value = 0
     }
