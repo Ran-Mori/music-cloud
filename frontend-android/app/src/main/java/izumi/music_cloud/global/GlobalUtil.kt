@@ -1,6 +1,13 @@
 package izumi.music_cloud.global
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.core.content.ContextCompat
 import izumi.music_cloud.App
+import izumi.music_cloud.R
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
@@ -20,7 +27,11 @@ object GlobalUtil {
         }
     }
 
-    fun String.getFilePathBySongId(): String = "${App.context.filesDir.absolutePath}${File.separator}${this}.mp3"
+    fun checkPermission(context: Context, permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+
+    fun String.getFilePathBySongId(): String =
+        "${App.context.filesDir.absolutePath}${File.separator}${this}.mp3"
 
     fun String.musicExists(): Boolean {
         if (this.length != 32) return false
@@ -48,4 +59,16 @@ object GlobalUtil {
         }
     }
 
+    @SuppressLint("Recycle")
+    fun Uri.getFileName(context: Context): String {
+        var result = ""
+        if (this.scheme == "content") {
+            val cursor =
+                context.contentResolver.query(this, null, null, null, null) ?: return result
+            if (!cursor.moveToFirst()) return result
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            result = cursor.getString(index)
+        }
+        return result.ifEmpty { context.getString(R.string.default_music_file_name) }
+    }
 }

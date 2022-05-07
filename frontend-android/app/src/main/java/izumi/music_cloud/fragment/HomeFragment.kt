@@ -1,13 +1,19 @@
 package izumi.music_cloud.fragment
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.facebook.drawee.view.SimpleDraweeView
@@ -15,15 +21,21 @@ import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
 import izumi.music_cloud.callback.ViewHolderCallback
 import izumi.music_cloud.controller.MusicController
+import izumi.music_cloud.global.GlobalConst
+import izumi.music_cloud.global.GlobalUtil
 import izumi.music_cloud.global.GlobalUtil.getCoverUrlBySongId
+import izumi.music_cloud.global.GlobalUtil.getFileName
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.recycler.SongAdapter
 import izumi.music_cloud.viewmodel.SongViewModel
+import java.io.File
 
 class HomeFragment : BaseFragment() {
 
     companion object {
         const val TAG = "home_fragment"
+        private const val SELECT_FILE_REQUEST_CODE = 1024
+        private const val REQUEST_STORAGE_PERMISSION = 2048
 
         @JvmStatic
         fun newInstance() = HomeFragment()
@@ -33,6 +45,7 @@ class HomeFragment : BaseFragment() {
     private var playAllIcon: ImageView? = null
     private var playAllTextView: TextView? = null
     private var downloadAllIcon: ImageView? = null
+    private var uploadSongIcon: ImageView? = null
     private var songRecyclerView: RecyclerView? = null
     private var bottomMiniPlayer: View? = null
     private var downloadProgress: TextView? = null
@@ -96,6 +109,7 @@ class HomeFragment : BaseFragment() {
         return inflater.inflate(R.layout.fragment_home, container, false).apply {
             mainCover = findViewById(R.id.main_cover)
             downloadAllIcon = findViewById(R.id.main_download_all)
+            uploadSongIcon = findViewById(R.id.main_upload_song)
             playAllIcon = findViewById(R.id.main_ic_play_all)
             playAllTextView = findViewById(R.id.main_text_play_all)
             songRecyclerView = findViewById(R.id.main_playlist)
@@ -124,6 +138,7 @@ class HomeFragment : BaseFragment() {
         playAllIcon?.setOnClickListener(this)
         playAllTextView?.setOnClickListener(this)
         downloadAllIcon?.setOnClickListener(this)
+        uploadSongIcon?.setOnClickListener(this)
         bottomMiniPlayer?.setOnClickListener(this)
         bmpStartAndPause?.setOnClickListener(this)
         bmpPlayNext?.setOnClickListener(this)
@@ -247,6 +262,52 @@ class HomeFragment : BaseFragment() {
             .commit()
     }
 
+    private fun requestStoragePermission() {
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+            REQUEST_STORAGE_PERMISSION
+        )
+    }
+
+    private fun startChooseFileActivity() {
+        val intent = Intent().apply {
+            action = Intent.ACTION_GET_CONTENT
+            type = "audio/mp3"
+        }
+        startActivityForResult(
+            Intent.createChooser(
+                intent,
+                getString(R.string.select_audio_file_title)
+            ), SELECT_FILE_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED && requestCode == REQUEST_STORAGE_PERMISSION) {
+            startChooseFileActivity()
+        } else {
+            Toast.makeText(requireContext(), "请授予存储权限后再试", Toast.LENGTH_LONG).show()
+        }
+    }
+
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == SELECT_FILE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val uri = data?.data ?: return
+            val path = uri.path ?: return
+            var file = File(path)
+            var fileName = uri.getFileName(requireContext())
+            songViewModel.upload(requireContext(),uri)
+        }
+    }
+
+
     override fun onClick(view: View?) {
         view ?: return
         when (view.id) {
@@ -255,6 +316,17 @@ class HomeFragment : BaseFragment() {
             }
             R.id.main_download_all -> {
                 onDownloadAllClick()
+            }
+            R.id.main_upload_song -> {
+                if (GlobalUtil.checkPermission(
+                        requireContext(),
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    )
+                ) {
+                    startChooseFileActivity()
+                } else {
+                    requestStoragePermission()
+                }
             }
             R.id.bmp_start_or_pause -> {
                 onPauseOrStartClick()

@@ -1,5 +1,7 @@
 package izumi.music_cloud.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -13,10 +15,17 @@ import izumi.music_cloud.App
 import izumi.music_cloud.callback.DownloadCallBack
 import izumi.music_cloud.error.Error
 import izumi.music_cloud.global.GlobalConst
+import izumi.music_cloud.global.GlobalUtil.getFileName
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.global.GlobalUtil.musicExists
 import izumi.music_cloud.recycler.SongData
 import izumi.music_cloud.retrofit.SongService
+import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import kotlin.concurrent.thread
 
@@ -132,6 +141,31 @@ class SongModel {
                         callBack?.onComplete(index)
                     })
                 }
+            }.let { disposable.add(it) }
+    }
+
+    fun uploadSong(context: Context, uri: Uri) {
+        val path = uri.path ?: return
+        val file = File(path)
+        val fileName = uri.getFileName(context)
+        val mediaType = context.contentResolver.getType(uri) ?: return
+        val mediaTypeObject = mediaType.toMediaTypeOrNull() ?: return
+        val requestFile = file.asRequestBody(mediaTypeObject)
+        val partFile = MultipartBody.Part.createFormData("file", fileName, requestFile)
+
+        val requestBody = "this is to set 'multipart/form-data' header".toRequestBody(MultipartBody.FORM)
+        SongService.uploadSong(requestBody, partFile)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                Log.d(GlobalConst.LOG_TAG, "uploadSong doOnSubscribe")
+            }
+            .doOnError {
+                val throwable = it
+                Log.d(GlobalConst.LOG_TAG, "uploadSong doOnError")
+            }
+            .subscribe {
+                Log.d(GlobalConst.LOG_TAG, "uploadSong doOnNext")
             }.let { disposable.add(it) }
     }
 }
