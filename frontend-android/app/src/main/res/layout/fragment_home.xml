@@ -124,12 +124,12 @@
                     android:paddingEnd="10dp"
                     android:paddingStart="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/main_upload"
+                    app:layout_constraintEnd_toStartOf="@id/main_upload_song"
                     app:layout_constraintTop_toTopOf="parent"
                     app:srcCompat="@drawable/ic_download" />
 
                 <ImageView
-                    android:id="@+id/main_upload"
+                    android:id="@+id/main_upload_song"
                     android:layout_width="50dp"
                     android:layout_height="40dp"
                     android:paddingTop="10dp"

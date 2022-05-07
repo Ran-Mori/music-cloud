@@ -1,5 +1,7 @@
 package izumi.music_cloud.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -14,8 +16,6 @@ class SongViewModel : ViewModel() {
         const val STATUS_NOT_INIT = 0
         const val STATUS_PLAYING = 1
         const val STATUS_PAUSED = 2
-
-        const val STATUS_DOWNLOADING = 3
     }
 
     private val _songList = MutableLiveData<List<SongData>>()
@@ -71,6 +71,10 @@ class SongViewModel : ViewModel() {
     // download music
     fun download(index: Int, callBack: DownloadCallBack? = null) {
         mainModel.downloadSong(_songList, _error, _downloadProgress, index, callBack)
+    }
+
+    fun upload(context: Context, uri: Uri) {
+        mainModel.uploadSong(context, uri)
     }
 
     fun setCurrentIndex(currentIndex: Int) {
