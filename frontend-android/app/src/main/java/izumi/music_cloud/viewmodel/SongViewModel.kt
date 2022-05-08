@@ -1,13 +1,13 @@
 package izumi.music_cloud.viewmodel
 
-import android.content.Context
-import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import izumi.music_cloud.callback.DownloadCallBack
-import izumi.music_cloud.error.Error
+import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.recycler.SongData
+import okhttp3.MultipartBody
+import java.io.File
 import kotlin.random.Random
 
 class SongViewModel : ViewModel() {
@@ -20,11 +20,12 @@ class SongViewModel : ViewModel() {
 
     private val _songList = MutableLiveData<List<SongData>>()
     private val _currentIndex = MutableLiveData<Int>()
-    private val _error = MutableLiveData<Error?>()
+    private val _toast = MutableLiveData<ToastMsg?>()
     private val _shuffle = MutableLiveData<Boolean>()
     private val _playingStatus = MutableLiveData<Int>()
     private val _isDownloading = MutableLiveData<Boolean>()
-    private val _downloadProgress = MutableLiveData<Int>()
+    private val _isUploading = MutableLiveData<Boolean>()
+    private val _loadingProgress = MutableLiveData<Int>()
     private var _currentMilliSec = MutableLiveData<Int>()
     private var _endMilliSec = MutableLiveData<Int>()
 
@@ -36,8 +37,8 @@ class SongViewModel : ViewModel() {
     val currentIndex: LiveData<Int>
         get() = _currentIndex
 
-    val error: LiveData<Error?>
-        get() = _error
+    val toastMsg: LiveData<ToastMsg?>
+        get() = _toast
 
     val shuffle: LiveData<Boolean>
         get() = _shuffle
@@ -48,8 +49,11 @@ class SongViewModel : ViewModel() {
     val isDownloading: LiveData<Boolean>
         get() = _isDownloading
 
-    val downloadProgress: LiveData<Int>
-        get() = _downloadProgress
+    val isUploading: LiveData<Boolean>
+        get() = _isUploading
+
+    val loadingProgress: LiveData<Int>
+        get() = _loadingProgress
 
     val currentMilliSec: LiveData<Int>
         get() = _currentMilliSec
@@ -58,23 +62,30 @@ class SongViewModel : ViewModel() {
         get() = _endMilliSec
 
     init {
-        mainModel.getSongList(_songList, _error)
+        mainModel.getSongList(_songList, _toast)
         _currentIndex.value = -1
-        _error.value = null
         _shuffle.value = false
         _playingStatus.value = STATUS_NOT_INIT
         _isDownloading.value = false
         _currentMilliSec.value = 0
         _endMilliSec.value = 0
+
+        //should not init these value
+        //_toast.value = null
+        //_downloadProgress.value = 0
     }
 
     // download music
     fun download(index: Int, callBack: DownloadCallBack? = null) {
-        mainModel.downloadSong(_songList, _error, _downloadProgress, index, callBack)
+        mainModel.downloadSong(_songList, _toast, _loadingProgress, index, callBack)
     }
 
-    fun upload(context: Context, uri: Uri) {
-        mainModel.uploadSong(context, uri)
+    fun upload(filePart: MultipartBody.Part) {
+        mainModel.uploadSong(_isUploading, filePart)
+    }
+
+    fun restSongList() {
+        mainModel.getSongList(_songList, _toast)
     }
 
     fun setCurrentIndex(currentIndex: Int) {
@@ -85,8 +96,24 @@ class SongViewModel : ViewModel() {
         _playingStatus.value = playingStatus
     }
 
+    fun setToastMsg(toastMsg: ToastMsg) {
+        _toast.value = toastMsg
+    }
+
     fun setIsDownloading(isDownloading: Boolean) {
         _isDownloading.value = isDownloading
+    }
+
+    fun setIsUploading(isUploading: Boolean) {
+        _isUploading.value = isUploading
+    }
+
+    fun setShuffle(shuffle: Boolean) {
+        _shuffle.value = shuffle
+    }
+
+    fun setLoadingProgress(progress: Int) {
+        _loadingProgress.value = progress
     }
 
     fun setCurrentMilliSec(milliSec: Int) {
@@ -123,5 +150,4 @@ class SongViewModel : ViewModel() {
             else -> -1
         }
     }
-
 }

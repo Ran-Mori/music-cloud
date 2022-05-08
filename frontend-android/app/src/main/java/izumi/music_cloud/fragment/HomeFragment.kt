@@ -19,16 +19,19 @@ import androidx.recyclerview.widget.RecyclerView
 import com.facebook.drawee.view.SimpleDraweeView
 import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
+import izumi.music_cloud.callback.UploadingCallBack
 import izumi.music_cloud.callback.ViewHolderCallback
 import izumi.music_cloud.controller.MusicController
+import izumi.music_cloud.global.FileUtils
 import izumi.music_cloud.global.GlobalConst
 import izumi.music_cloud.global.GlobalUtil
 import izumi.music_cloud.global.GlobalUtil.getCoverUrlBySongId
-import izumi.music_cloud.global.GlobalUtil.getFileName
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.recycler.SongAdapter
+import izumi.music_cloud.retrofit.UploadRequestBody
+import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.viewmodel.SongViewModel
-import java.io.File
+import okhttp3.MultipartBody
 
 class HomeFragment : BaseFragment() {
 
@@ -48,7 +51,7 @@ class HomeFragment : BaseFragment() {
     private var uploadSongIcon: ImageView? = null
     private var songRecyclerView: RecyclerView? = null
     private var bottomMiniPlayer: View? = null
-    private var downloadProgress: TextView? = null
+    private var progressText: TextView? = null
     private var bmpCover: SimpleDraweeView? = null
     private var bmpTitle: TextView? = null
     private var bmpStartAndPause: ImageView? = null
@@ -114,7 +117,7 @@ class HomeFragment : BaseFragment() {
             playAllTextView = findViewById(R.id.main_text_play_all)
             songRecyclerView = findViewById(R.id.main_playlist)
             bottomMiniPlayer = findViewById(R.id.main_bottom_mini_player)
-            downloadProgress = findViewById(R.id.main_download_progress)
+            progressText = findViewById(R.id.main_progress_text)
             bmpCover = findViewById(R.id.bmp_over)
             bmpTitle = findViewById(R.id.bmp_title)
             bmpStartAndPause = findViewById(R.id.bmp_start_or_pause)
@@ -160,12 +163,8 @@ class HomeFragment : BaseFragment() {
             }
         }
 
-        songViewModel.error.observe(viewLifecycleOwner) {
+        songViewModel.toastMsg.observe(viewLifecycleOwner) {
             it?.let { Toast.makeText(requireContext(), it.msg, Toast.LENGTH_LONG).show() }
-        }
-
-        songViewModel.shuffle.observe(viewLifecycleOwner) {
-
         }
 
         songViewModel.playingStatus.observe(viewLifecycleOwner) {
@@ -177,12 +176,21 @@ class HomeFragment : BaseFragment() {
         }
 
         songViewModel.isDownloading.observe(viewLifecycleOwner) {
-            downloadProgress?.visibility = if (it) View.VISIBLE else View.GONE
+            progressText?.visibility = if (it) View.VISIBLE else View.GONE
         }
 
-        songViewModel.downloadProgress.observe(viewLifecycleOwner) { percent ->
-            downloadProgress?.text = getString(R.string.download_progress, percent)
+        songViewModel.isUploading.observe(viewLifecycleOwner) {
+            progressText?.visibility = if (it) View.VISIBLE else View.GONE
         }
+
+        songViewModel.loadingProgress.observe(viewLifecycleOwner) { percent ->
+            if (songViewModel.isDownloading.value == true) {
+                progressText?.text = getString(R.string.download_progress, percent)
+            } else if (songViewModel.isUploading.value == true) {
+                progressText?.text = getString(R.string.uploading_progress, percent)
+            }
+        }
+
     }
 
     //when click a song view holder
@@ -205,7 +213,7 @@ class HomeFragment : BaseFragment() {
             //play a new downloaded song
             startPlay(index)
         } else {
-            showToastWhenDownloading()
+            songViewModel.setToastMsg(ToastMsg.DOWNLOADING_NOT_ALLOW_CLICK)
         }
     }
 
@@ -216,22 +224,29 @@ class HomeFragment : BaseFragment() {
         if (songList.isEmpty()) return
 
         val size = songList.size
-        var downloadingIndex = 0
+        var nextDownloadIndex = 0
         val runnable = object : Runnable {
             override fun run() {
                 // that = this runnable
                 val that = this
 
-                songViewModel.download(downloadingIndex, object : DownloadCallBack {
+                songViewModel.download(nextDownloadIndex, object : DownloadCallBack {
                     override fun onComplete(index: Int) {
                         songAdapter?.notifyItemChanged(index)
                         songViewModel.setIsDownloading(false)
 
-                        while (++downloadingIndex != size && !songList[downloadingIndex].downloaded) {
+                        nextDownloadIndex = index + 1
+
+                        while (nextDownloadIndex != size && songList[nextDownloadIndex].downloaded) {
+                            ++nextDownloadIndex
+                            continue
+                        }
+
+                        Log.d(GlobalConst.LOG_TAG, "nextDownloadIndex == $nextDownloadIndex")
+                        if (nextDownloadIndex != size) {
                             //set isDownloading = true when post a downloading runnable
                             songViewModel.setIsDownloading(true)
                             handler.post(that)
-                            break
                         }
                     }
 
@@ -291,7 +306,7 @@ class HomeFragment : BaseFragment() {
         if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED && requestCode == REQUEST_STORAGE_PERMISSION) {
             startChooseFileActivity()
         } else {
-            Toast.makeText(requireContext(), "请授予存储权限后再试", Toast.LENGTH_LONG).show()
+            songViewModel.setToastMsg(ToastMsg.NOT_AUTHORIZE_STORAGE_PERMISSION)
         }
     }
 
@@ -299,14 +314,35 @@ class HomeFragment : BaseFragment() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == SELECT_FILE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            //the uri of selected mp3 file
             val uri = data?.data ?: return
-            val path = uri.path ?: return
-            var file = File(path)
-            var fileName = uri.getFileName(requireContext())
-            songViewModel.upload(requireContext(),uri)
+            val file = FileUtils.getFile(requireContext(), uri)
+            val fileName = file.name
+            if (fileName.contains("mp3", true)) {
+                val callBack = object : UploadingCallBack {
+
+                    override fun onProgress(percent: Int) {
+                        songViewModel.setLoadingProgress(percent)
+                    }
+
+                    override fun onComplete() {
+                        songViewModel.setToastMsg(ToastMsg.UploadSuccess)
+                        handler.postDelayed({ songViewModel.restSongList() }, 3000L)
+                        songViewModel.setIsUploading(false)
+                    }
+
+                    override fun onError() {
+                        songViewModel.setIsUploading(false)
+                    }
+                }
+                val fileBody = UploadRequestBody(file, callBack)
+                val filePart = MultipartBody.Part.createFormData("file", file.name, fileBody)
+                songViewModel.upload(filePart)
+            } else {
+                songViewModel.setToastMsg(ToastMsg.NOT_SELECT_A_MP3_FILE)
+            }
         }
     }
-
 
     override fun onClick(view: View?) {
         view ?: return
@@ -318,6 +354,10 @@ class HomeFragment : BaseFragment() {
                 onDownloadAllClick()
             }
             R.id.main_upload_song -> {
+                if (songViewModel.isDownloading.value == true) {
+                    songViewModel.setToastMsg(ToastMsg.DOWNLOADING_NOT_ALLOW_CLICK)
+                    return
+                }
                 if (GlobalUtil.checkPermission(
                         requireContext(),
                         Manifest.permission.WRITE_EXTERNAL_STORAGE
