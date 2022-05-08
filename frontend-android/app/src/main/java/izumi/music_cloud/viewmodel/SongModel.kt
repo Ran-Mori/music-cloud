@@ -1,7 +1,5 @@
 package izumi.music_cloud.viewmodel
 
-import android.content.Context
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -13,18 +11,13 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import izumi.music_cloud.App
 import izumi.music_cloud.callback.DownloadCallBack
-import izumi.music_cloud.error.Error
+import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.global.GlobalConst
-import izumi.music_cloud.global.GlobalUtil.getFileName
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.global.GlobalUtil.musicExists
 import izumi.music_cloud.recycler.SongData
 import izumi.music_cloud.retrofit.SongService
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import kotlin.concurrent.thread
@@ -37,7 +30,8 @@ class SongModel {
     private val handler = Handler(Looper.getMainLooper())
 
     // make it to be volatile, as it will be modify in other threads
-    @Volatile private var  isDownloading: Boolean = false
+    @Volatile
+    private var isDownloading: Boolean = false
 
     private fun updateDownloadStatus(songList: List<SongData>) {
         for (song in songList) {
@@ -47,13 +41,16 @@ class SongModel {
     }
 
 
-    fun getSongList(_songList: MutableLiveData<List<SongData>>, _error: MutableLiveData<Error?>) {
+    fun getSongList(
+        _songList: MutableLiveData<List<SongData>>,
+        _toastMsg: MutableLiveData<ToastMsg?>
+    ) {
         SongService.getSongList()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnError {
                 Log.d(GlobalConst.LOG_TAG, "resetSongList on complete")
-                _error.value = Error.GET_SONG_LIST_ERROR
+                _toastMsg.value = ToastMsg.GET_SONG_LIST_ERROR
             }
             .subscribe {
                 Log.d(GlobalConst.LOG_TAG, "resetSongList on next")
@@ -64,11 +61,12 @@ class SongModel {
 
     fun downloadSong(
         _songList: MutableLiveData<List<SongData>>,
-        _error: MutableLiveData<Error?>,
+        _toastMsg: MutableLiveData<ToastMsg?>,
         _downloadProgress: MutableLiveData<Int>,
         index: Int,
         callBack: DownloadCallBack? = null
     ) {
+        Log.d(GlobalConst.LOG_TAG, "SongModel.downloadSong index = $index")
         val songId = _songList.value?.get(index)?.id ?: return
         if (isDownloading) return
 
@@ -80,7 +78,7 @@ class SongModel {
             }
             .doOnError {
                 Log.d(GlobalConst.LOG_TAG, "downloadSong do on error")
-                _error.value = Error.DOWNLOAD_SONG_ERROR
+                _toastMsg.value = ToastMsg.DOWNLOAD_SONG_ERROR
                 callBack?.onError()
                 isDownloading = false
             }
@@ -92,11 +90,11 @@ class SongModel {
                     val path = songId.getFilePathBySongId()
                     val file = File(path)
                     if (file.exists() && songId.musicExists()) {
-                        handler.post {
+                        handler.postDelayed({
+                            // modify inDownloading in anther thread
+                            isDownloading = false
                             callBack?.onComplete(index)
-                        }
-                        // modify inDownloading in anther thread
-                        isDownloading = false
+                        }, 1000L)
                         return@thread
                     } else {
                         file.delete()
@@ -118,14 +116,15 @@ class SongModel {
                         output ?: return@thread
                         val buffer = ByteArray(4 * 1024)
                         var read: Int
-                        var totalRead = 0.0
+                        var readed = 0.0
                         while (input.read(buffer).also { read = it } != -1) {
                             Log.d(GlobalConst.LOG_TAG, "downloadSong downloading")
-                            totalRead += read
+                            readed += read
                             output.write(buffer, 0, read)
                             //show download percent
                             handler.sendMessage(Message.obtain(handler) {
-                                _downloadProgress.value = ((totalRead / contentLength) * 100).toInt()
+                                _downloadProgress.value =
+                                    ((readed / contentLength) * 100).toInt()
                             })
                         }
                         output.flush()
@@ -144,25 +143,23 @@ class SongModel {
             }.let { disposable.add(it) }
     }
 
-    fun uploadSong(context: Context, uri: Uri) {
-        val path = uri.path ?: return
-        val file = File(path)
-        val fileName = uri.getFileName(context)
-        val mediaType = context.contentResolver.getType(uri) ?: return
-        val mediaTypeObject = mediaType.toMediaTypeOrNull() ?: return
-        val requestFile = file.asRequestBody(mediaTypeObject)
-        val partFile = MultipartBody.Part.createFormData("file", fileName, requestFile)
+    fun uploadSong(_isUploading: MutableLiveData<Boolean>, filePart: MultipartBody.Part) {
 
-        val requestBody = "this is to set 'multipart/form-data' header".toRequestBody(MultipartBody.FORM)
-        SongService.uploadSong(requestBody, partFile)
+        val descriptionBody =
+            "this is to set 'multipart/form-data' header".toRequestBody(MultipartBody.FORM)
+        SongService.uploadSong(descriptionBody, filePart)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
+                _isUploading.value = true
                 Log.d(GlobalConst.LOG_TAG, "uploadSong doOnSubscribe")
             }
             .doOnError {
-                val throwable = it
                 Log.d(GlobalConst.LOG_TAG, "uploadSong doOnError")
+            }
+            .doOnTerminate {
+                _isUploading.value = false
+                Log.d(GlobalConst.LOG_TAG, "uploadSong doOnTerminate")
             }
             .subscribe {
                 Log.d(GlobalConst.LOG_TAG, "uploadSong doOnNext")

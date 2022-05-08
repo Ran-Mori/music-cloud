@@ -4,13 +4,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
 import izumi.music_cloud.controller.MusicController
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
+import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.viewmodel.SongViewModel
 import izumi.music_cloud.viewmodel.SongViewModelFactory
 
@@ -66,11 +65,7 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
     }
 
     protected fun onPlayPreviousClick() {
-        Toast.makeText(
-            requireContext(),
-            getString(R.string.not_support_play_next_toast),
-            Toast.LENGTH_LONG
-        ).show()
+        songViewModel.setToastMsg(ToastMsg.NOT_IMPLEMENT_PLAY_PREVIOUS)
     }
 
     protected fun onPauseOrStartClick() {
@@ -86,7 +81,7 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
             SongViewModel.STATUS_NOT_INIT -> {
                 if (songViewModel.isDownloading.value == true) {
                     // not allow to play potentially undownloaded music when downloading
-                    showToastWhenDownloading()
+                    songViewModel.setToastMsg(ToastMsg.DOWNLOADING_NOT_ALLOW_CLICK)
                 } else {
                     // play any music including undownloaed music when not downloading
                     val currentIndex = songViewModel.currentIndex.value ?: -1
@@ -102,18 +97,10 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
 
     protected fun onPlayNextClick() {
         if(songViewModel.isDownloading.value == true) {
-            showToastWhenDownloading()
+            songViewModel.setToastMsg(ToastMsg.DOWNLOADING_NOT_ALLOW_CLICK)
         } else {
             playNext()
         }
-    }
-
-    protected fun showToastWhenDownloading() {
-        Toast.makeText(
-            requireContext(),
-            getString(R.string.downloading_user_toast),
-            Toast.LENGTH_SHORT
-        ).show()
     }
 
     protected fun getDuration() = MusicController.getDuration()

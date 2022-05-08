@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import com.facebook.drawee.view.SimpleDraweeView
 import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
@@ -36,6 +37,7 @@ class PlayingFragment : BaseFragment() {
     private var downloadProgress: TextView? = null
     private var titleTextView: TextView? = null
     private var artistTextView: TextView? = null
+    private var playModeIcon: ImageView? = null
     private var playPrevious: ImageView? = null
     private var startAndPause: ImageView? = null
     private var playNext: ImageView? = null
@@ -88,6 +90,7 @@ class PlayingFragment : BaseFragment() {
             downloadProgress = findViewById(R.id.playing_download_progress)
             titleTextView = findViewById(R.id.playing_title)
             artistTextView = findViewById(R.id.playing_artist)
+            playModeIcon = findViewById(R.id.playing_play_mode)
             playPrevious = findViewById(R.id.playing_play_previous)
             startAndPause = findViewById(R.id.playing_play_and_pause)
             playNext = findViewById(R.id.playing_play_next)
@@ -105,6 +108,7 @@ class PlayingFragment : BaseFragment() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun initView() {
+        playModeIcon?.setOnClickListener(this)
         playPrevious?.setOnClickListener(this)
         startAndPause?.setOnClickListener(this)
         playNext?.setOnClickListener(this)
@@ -157,12 +161,21 @@ class PlayingFragment : BaseFragment() {
             }
         }
 
+        songViewModel.toastMsg.observe(viewLifecycleOwner) {
+            it?.let { Toast.makeText(requireContext(), it.msg, Toast.LENGTH_LONG).show() }
+        }
+
+        songViewModel.shuffle.observe(viewLifecycleOwner) {
+            val resId = if (it) R.drawable.ic_shuffle_play else R.drawable.ic_order_play
+            playModeIcon?.setImageResource(resId)
+        }
+
         songViewModel.isDownloading.observe(viewLifecycleOwner) {
             // don't set it's visibility to be GONE, as it will change the UI
             downloadProgress?.visibility = if (it) View.VISIBLE else View.INVISIBLE
         }
 
-        songViewModel.downloadProgress.observe(viewLifecycleOwner) { percent ->
+        songViewModel.loadingProgress.observe(viewLifecycleOwner) { percent ->
             downloadProgress?.text = getString(R.string.download_progress, percent)
         }
 
@@ -183,6 +196,10 @@ class PlayingFragment : BaseFragment() {
     override fun onClick(view: View?) {
         view ?: return
         when (view.id) {
+            R.id.playing_play_mode -> {
+                val current = songViewModel.shuffle.value ?: false
+                songViewModel.setShuffle(!current)
+            }
             R.id.playing_play_previous -> {
                 onPlayPreviousClick()
             }
