@@ -65,12 +65,12 @@ func (s *SongController) deleteOneById(w http.ResponseWriter, r *http.Request, p
 	}
 
 	songPath := strings.Join([]string{basic.GetUserHomeDir(), basic.MusicStorePath, md5IdStr, ".mp3"}, "")
-	picPaht := strings.Join([]string{basic.GetUserHomeDir(), basic.MusicStorePath, md5IdStr, ".png"}, "")
+	picPath := strings.Join([]string{basic.GetUserHomeDir(), basic.MusicStorePath, md5IdStr, ".png"}, "")
 	if _, err := os.Stat(songPath); !errors.Is(err, os.ErrNotExist) {
 		os.Remove(songPath)
 	}
-	if _, err := os.Stat(picPaht); !errors.Is(err, os.ErrNotExist) {
-		os.Remove(picPaht)
+	if _, err := os.Stat(picPath); !errors.Is(err, os.ErrNotExist) {
+		os.Remove(picPath)
 	}
 }
 
