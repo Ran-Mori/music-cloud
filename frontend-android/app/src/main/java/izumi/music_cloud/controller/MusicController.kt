@@ -7,7 +7,8 @@ import java.io.IOException
 
 object MusicController {
 
-    private var onPlayCompleteCallBack: (() -> Unit)? = null
+    //in fact this call back is to 'play next song'
+    private var playNextSongFunc: (() -> Unit)? = null
 
     private val player by lazy {
         MediaPlayer().apply {
@@ -18,21 +19,27 @@ object MusicController {
             }
 
             setOnErrorListener { mp, what, extra ->
+                Log.d(
+                    GlobalConst.LOG_TAG,
+                    "MediaPlayer onError. mp is '$mp', what is '$what', extra is '$extra'"
+                )
                 return@setOnErrorListener true
             }
 
             setOnCompletionListener {
-                onPlayCompleteCallBack?.invoke()
+                playNextSongFunc?.invoke()
             }
         }
     }
 
     fun startPlay(filePath: String?) {
         filePath ?: return
-        player.reset()
         try {
-            player.setDataSource(filePath)
-            player.prepareAsync()
+            player.apply {
+                reset()
+                setDataSource(filePath)
+                prepareAsync()
+            }
         } catch (e: IOException) {
             Log.d(GlobalConst.LOG_TAG, "setDatasource catch an IOException")
         } catch (e: IllegalArgumentException) {
@@ -53,8 +60,8 @@ object MusicController {
         if (player.isPlaying) player.pause()
     }
 
-    fun setOnPlayCompleteCallBack(callback: () -> Unit) {
-        onPlayCompleteCallBack = callback
+    fun setPlayNextFunc(func: () -> Unit) {
+        playNextSongFunc = func
     }
 
     fun resumePlay() {

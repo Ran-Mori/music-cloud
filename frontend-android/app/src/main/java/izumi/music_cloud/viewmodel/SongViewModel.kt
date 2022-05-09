@@ -5,7 +5,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import izumi.music_cloud.callback.DownloadCallBack
+import izumi.music_cloud.callback.UpdateSongListCallback
 import izumi.music_cloud.global.GlobalConst
+import izumi.music_cloud.global.GlobalUtil.musicExists
 import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.recycler.SongData
 import okhttp3.MultipartBody
@@ -28,7 +30,7 @@ class SongViewModel : ViewModel() {
     private val _isUploading = MutableLiveData<Boolean>()
     private val _loadingProgress = MutableLiveData<Int>()
     private var _currentMilliSec = MutableLiveData<Int>()
-    private var _endMilliSec = MutableLiveData<Int>()
+    private var _totalMilliSec = MutableLiveData<Int>()
 
     private val mainModel by lazy { SongModel() }
 
@@ -59,17 +61,17 @@ class SongViewModel : ViewModel() {
     val currentMilliSec: LiveData<Int>
         get() = _currentMilliSec
 
-    val endMilliSec: LiveData<Int>
-        get() = _endMilliSec
+    val totalMilliSec: LiveData<Int>
+        get() = _totalMilliSec
 
     init {
-        mainModel.getSongList(_songList, _toast)
+        _songList.value = listOf()
         _currentIndex.value = -1
         _shuffle.value = false
         _playingStatus.value = STATUS_NOT_INIT
         _isDownloading.value = false
         _currentMilliSec.value = 0
-        _endMilliSec.value = 0
+        _totalMilliSec.value = 0
 
         //should not init these value
         //_toast.value = null
@@ -77,16 +79,24 @@ class SongViewModel : ViewModel() {
     }
 
     // download music
-    fun download(index: Int, callBack: DownloadCallBack? = null) {
-        mainModel.downloadSong(_songList, _toast, _loadingProgress, index, callBack)
+    fun download(index: Int, songId: String, callBack: DownloadCallBack? = null) {
+        mainModel.downloadSong(index, songId, callBack)
     }
 
     fun upload(filePart: MultipartBody.Part) {
-        mainModel.uploadSong(_isUploading, filePart)
+        mainModel.uploadSong(filePart)
     }
 
-    fun restSongList() {
-        mainModel.getSongList(_songList, _toast)
+    fun requestUpdateSongList(callback: UpdateSongListCallback) {
+        mainModel.getSongList(callback)
+    }
+
+    fun setSongList(list: List<SongData>) {
+        for (song in list) {
+            val id = song.id ?: continue
+            if (id.musicExists()) song.downloaded = true
+        }
+        _songList.value = list
     }
 
     fun setCurrentIndex(currentIndex: Int) {
@@ -97,7 +107,7 @@ class SongViewModel : ViewModel() {
         _playingStatus.value = playingStatus
     }
 
-    fun setToastMsg(toastMsg: ToastMsg) {
+    fun setToastMsg(toastMsg: ToastMsg?) {
         _toast.value = toastMsg
     }
 
@@ -122,7 +132,7 @@ class SongViewModel : ViewModel() {
     }
 
     fun setEndMilliSec(milliSec: Int) {
-        _endMilliSec.value = milliSec
+        _totalMilliSec.value = milliSec
     }
 
     fun getSongByIndex(index: Int): SongData? {

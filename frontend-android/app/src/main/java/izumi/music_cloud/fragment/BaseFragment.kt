@@ -27,11 +27,11 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        MusicController.setOnPlayCompleteCallBack { playNext() }
-        singleDownloadCallBack = resetSingleDownloadCallBack()
+        MusicController.setPlayNextFunc { playNext() }
+        singleDownloadCallBack = setSingleDownloadCallBack()
     }
 
-    abstract fun resetSingleDownloadCallBack(): DownloadCallBack
+    abstract fun setSingleDownloadCallBack(): DownloadCallBack
 
     protected fun startPlay(index: Int) {
         songViewModel.setCurrentIndex(index)
@@ -43,16 +43,14 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
             songViewModel.setPlayingStatus(SongViewModel.STATUS_PLAYING)
         } else {
             //song haven't been downloaded
+            songViewModel.download(index, songId, singleDownloadCallBack)
             songViewModel.setPlayingStatus(SongViewModel.STATUS_NOT_INIT)
-            songViewModel.setIsDownloading(true)
-            songViewModel.download(index, singleDownloadCallBack)
         }
     }
 
     private fun playNext() {
         // the index ready to play
         val nextIndex = songViewModel.getNextIndex()
-        // start to play
         startPlay(nextIndex)
     }
 
@@ -96,7 +94,8 @@ abstract class BaseFragment : Fragment(), View.OnClickListener {
     }
 
     protected fun onPlayNextClick() {
-        if(songViewModel.isDownloading.value == true) {
+        if (songViewModel.isDownloading.value == true) {
+            // not allow to play potentially undownloaded music when downloading
             songViewModel.setToastMsg(ToastMsg.DOWNLOADING_NOT_ALLOW_CLICK)
         } else {
             playNext()

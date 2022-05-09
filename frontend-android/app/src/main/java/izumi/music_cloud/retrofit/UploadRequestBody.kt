@@ -27,6 +27,7 @@ class UploadRequestBody(private val file: File, private val callBack: UploadingC
         var uploaded = 0.0
         try {
             FileInputStream(file).use { input ->
+                handler.post { callBack.onStart() }
                 while (input.read(buffer).also { upload = it } != -1) {
                     uploaded += upload
                     sink.write(buffer, 0, upload)

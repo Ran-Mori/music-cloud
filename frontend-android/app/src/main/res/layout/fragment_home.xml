@@ -42,12 +42,12 @@
                         android:id="@+id/main_cover"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
+                        android:src="@drawable/default_cover"
                         fresco:actualImageScaleType="centerCrop"
-                        fresco:placeholderImageScaleType="centerCrop"
+                        fresco:failureImage="@drawable/default_cover"
                         fresco:failureImageScaleType="centerCrop"
                         fresco:placeholderImage="@drawable/ic_launcher"
-                        fresco:failureImage="@drawable/default_cover"
-                        android:src="@drawable/default_cover" />
+                        fresco:placeholderImageScaleType="centerCrop" />
 
                 </androidx.cardview.widget.CardView>
 
@@ -74,8 +74,8 @@
                 android:layout_height="48dp"
                 android:background="@drawable/bg_nav"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintRight_toRightOf="parent">
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintStart_toStartOf="parent">
 
                 <ImageView
                     android:id="@+id/main_ic_play_all"
@@ -91,10 +91,10 @@
                     android:id="@+id/main_text_play_all"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:gravity="center_vertical"
                     android:layout_marginStart="10dp"
                     android:layout_marginBottom="1dp"
                     android:fontFamily="@font/tapestry_regular"
+                    android:gravity="center_vertical"
                     android:minWidth="10dp"
                     android:text="@string/play_all"
                     android:textColor="@color/color_text_foreground"
@@ -110,19 +110,19 @@
                     android:textColor="@color/black"
                     android:textSize="11sp"
                     android:visibility="gone"
-                    app:layout_constraintStart_toEndOf="@id/main_text_play_all"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@id/main_download_all"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
+                    app:layout_constraintStart_toEndOf="@id/main_text_play_all"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <ImageView
                     android:id="@+id/main_download_all"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:paddingEnd="10dp"
                     android:paddingStart="10dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@id/main_upload_song"
                     app:layout_constraintTop_toTopOf="parent"
@@ -132,10 +132,10 @@
                     android:id="@+id/main_upload_song"
                     android:layout_width="50dp"
                     android:layout_height="40dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:paddingEnd="20dp"
                     android:paddingStart="10dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="20dp"
+                    android:paddingBottom="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
