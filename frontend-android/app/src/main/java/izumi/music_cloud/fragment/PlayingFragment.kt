@@ -1,9 +1,9 @@
 package izumi.music_cloud.fragment
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,7 +15,6 @@ import com.facebook.drawee.view.SimpleDraweeView
 import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
 import izumi.music_cloud.controller.MusicController
-import izumi.music_cloud.global.GlobalConst
 import izumi.music_cloud.global.GlobalUtil.getCoverUrlBySongId
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.global.GlobalUtil.milliSecToMinute
@@ -28,6 +27,7 @@ class PlayingFragment : BaseFragment() {
     companion object {
         const val TAG = "playing_fragment"
         private const val HANDLER_DELAY_MILLI_SEC: Long = 1000
+        private const val KEY_MODE_IS_SHUFFLE = "key_mode_is_shuffle"
 
         @JvmStatic
         fun newInstance() = PlayingFragment()
@@ -47,8 +47,6 @@ class PlayingFragment : BaseFragment() {
 
     private val updateProgressRunnable: Runnable = object : Runnable {
         override fun run() {
-            Log.d(GlobalConst.LOG_TAG, "updateProgressRunnable run, position is ${getPosition()}")
-
             //same means pause
             if (getPosition() != songViewModel.currentMilliSec.value) {
                 songViewModel.setCurrentMilliSec(getPosition())
@@ -73,6 +71,13 @@ class PlayingFragment : BaseFragment() {
             songViewModel.setPlayingStatus(SongViewModel.STATUS_NOT_INIT)
             songViewModel.setIsDownloading(false)
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val sharedPref = activity?.getPreferences(Context.MODE_PRIVATE) ?: return
+        val isShuffle = sharedPref.getBoolean(KEY_MODE_IS_SHUFFLE, false)
+        songViewModel.setShuffle(isShuffle)
     }
 
     override fun onResume() {
@@ -199,6 +204,11 @@ class PlayingFragment : BaseFragment() {
             R.id.playing_play_mode -> {
                 val current = songViewModel.shuffle.value ?: false
                 songViewModel.setShuffle(!current)
+                val sp = activity?.getPreferences(Context.MODE_PRIVATE) ?: return
+                with(sp.edit()) {
+                    putBoolean(KEY_MODE_IS_SHUFFLE, !current)
+                    apply()
+                }
             }
             R.id.playing_play_previous -> {
                 onPlayPreviousClick()

@@ -1,13 +1,14 @@
 package izumi.music_cloud.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import izumi.music_cloud.callback.DownloadCallBack
+import izumi.music_cloud.global.GlobalConst
 import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.recycler.SongData
 import okhttp3.MultipartBody
-import java.io.File
 import kotlin.random.Random
 
 class SongViewModel : ViewModel() {
@@ -138,7 +139,9 @@ class SongViewModel : ViewModel() {
         return when {
             size <= 0 -> -1
             _shuffle.value == true -> {
-                val index = Random(0).nextInt(size)
+                val seed = System.currentTimeMillis()
+                Log.d(GlobalConst.LOG_TAG, "getNextIndex() random seed = $seed")
+                val index = Random(seed).nextInt(size)
                 if (index == _currentIndex.value) {
                     // shuffle next equals current play
                     getNextIndex()
