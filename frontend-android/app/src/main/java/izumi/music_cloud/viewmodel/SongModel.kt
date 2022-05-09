@@ -48,15 +48,18 @@ class SongModel {
         SongService.getSongList()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnError {
-                Log.d(GlobalConst.LOG_TAG, "resetSongList on complete")
-                _toastMsg.value = ToastMsg.GET_SONG_LIST_ERROR
-            }
-            .subscribe {
-                Log.d(GlobalConst.LOG_TAG, "resetSongList on next")
-                updateDownloadStatus(it)
-                _songList.value = it
-            }.let { disposable.add(it) }
+            .subscribe(
+                {
+                    Log.d(GlobalConst.LOG_TAG, "resetSongList on next")
+                    updateDownloadStatus(it)
+                    _songList.value = it
+                },
+                {
+                    Log.d(GlobalConst.LOG_TAG, "resetSongList on complete")
+                    _toastMsg.value = ToastMsg.GET_SONG_LIST_ERROR
+                    _songList.value = listOf()
+                }
+            ).let { disposable.add(it) }
     }
 
     fun downloadSong(
@@ -76,71 +79,72 @@ class SongModel {
             .doOnSubscribe {
                 isDownloading = true
             }
-            .doOnError {
-                Log.d(GlobalConst.LOG_TAG, "downloadSong do on error")
-                _toastMsg.value = ToastMsg.DOWNLOAD_SONG_ERROR
-                callBack?.onError()
-                isDownloading = false
-            }
-            .subscribe {
-                // do on next will immediately return as 'thread{}'
-                thread {
-                    Log.d(GlobalConst.LOG_TAG, "downloadSong do on next")
+            .subscribe(
+                {
+                    thread {
+                        Log.d(GlobalConst.LOG_TAG, "downloadSong do on next")
 
-                    val path = songId.getFilePathBySongId()
-                    val file = File(path)
-                    if (file.exists() && songId.musicExists()) {
-                        handler.postDelayed({
-                            // modify inDownloading in anther thread
-                            isDownloading = false
-                            callBack?.onComplete(index)
-                        }, 1000L)
-                        return@thread
-                    } else {
-                        file.delete()
-                        file.createNewFile()
-                    }
-
-                    val uri = FileProvider.getUriForFile(
-                        App.context,
-                        GlobalConst.FILE_PROVIDER_AUTHORITIES,
-                        file
-                    )
-
-                    val input = it.body()?.byteStream() ?: return@thread
-                    val contentLength: Long = it.raw().body?.contentLength() ?: Long.MAX_VALUE
-
-                    Log.d(GlobalConst.LOG_TAG, "downloadSong start")
-
-                    App.context.contentResolver?.openOutputStream(uri).use { output ->
-                        output ?: return@thread
-                        val buffer = ByteArray(4 * 1024)
-                        var read: Int
-                        var readed = 0.0
-                        while (input.read(buffer).also { read = it } != -1) {
-                            Log.d(GlobalConst.LOG_TAG, "downloadSong downloading")
-                            readed += read
-                            output.write(buffer, 0, read)
-                            //show download percent
-                            handler.sendMessage(Message.obtain(handler) {
-                                _downloadProgress.value =
-                                    ((readed / contentLength) * 100).toInt()
-                            })
+                        val path = songId.getFilePathBySongId()
+                        val file = File(path)
+                        if (file.exists() && songId.musicExists()) {
+                            handler.postDelayed({
+                                // modify inDownloading in anther thread
+                                isDownloading = false
+                                callBack?.onComplete(index)
+                            }, 1000L)
+                            return@thread
+                        } else {
+                            file.delete()
+                            file.createNewFile()
                         }
-                        output.flush()
+
+                        val uri = FileProvider.getUriForFile(
+                            App.context,
+                            GlobalConst.FILE_PROVIDER_AUTHORITIES,
+                            file
+                        )
+
+                        val input = it.body()?.byteStream() ?: return@thread
+                        val contentLength: Long = it.raw().body?.contentLength() ?: Long.MAX_VALUE
+
+                        Log.d(GlobalConst.LOG_TAG, "downloadSong start")
+
+                        App.context.contentResolver?.openOutputStream(uri).use { output ->
+                            output ?: return@thread
+                            val buffer = ByteArray(4 * 1024)
+                            var read: Int
+                            var readed = 0.0
+                            while (input.read(buffer).also { read = it } != -1) {
+                                Log.d(GlobalConst.LOG_TAG, "downloadSong downloading")
+                                readed += read
+                                output.write(buffer, 0, read)
+                                //show download percent
+                                handler.sendMessage(Message.obtain(handler) {
+                                    _downloadProgress.value =
+                                        ((readed / contentLength) * 100).toInt()
+                                })
+                            }
+                            output.flush()
+                        }
+                        Log.d(GlobalConst.LOG_TAG, "downloadSong finish")
+
+                        // modify inDownloading in anther thread
+                        isDownloading = false
+
+                        handler.sendMessage(Message.obtain(handler) {
+                            Log.d(GlobalConst.LOG_TAG, "downloadSong handler do")
+                            _songList.value?.get(index)?.downloaded = true
+                            callBack?.onComplete(index)
+                        })
                     }
-                    Log.d(GlobalConst.LOG_TAG, "downloadSong finish")
-
-                    // modify inDownloading in anther thread
+                },
+                {
+                    Log.d(GlobalConst.LOG_TAG, "downloadSong do on error")
+                    _toastMsg.value = ToastMsg.DOWNLOAD_SONG_ERROR
+                    callBack?.onError()
                     isDownloading = false
-
-                    handler.sendMessage(Message.obtain(handler) {
-                        Log.d(GlobalConst.LOG_TAG, "downloadSong handler do")
-                        _songList.value?.get(index)?.downloaded = true
-                        callBack?.onComplete(index)
-                    })
                 }
-            }.let { disposable.add(it) }
+            ).let { disposable.add(it) }
     }
 
     fun uploadSong(_isUploading: MutableLiveData<Boolean>, filePart: MultipartBody.Part) {
