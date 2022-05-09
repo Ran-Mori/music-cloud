@@ -15,10 +15,12 @@ import com.facebook.drawee.view.SimpleDraweeView
 import izumi.music_cloud.R
 import izumi.music_cloud.callback.DownloadCallBack
 import izumi.music_cloud.controller.MusicController
+import izumi.music_cloud.global.GlobalConst
 import izumi.music_cloud.global.GlobalUtil.getCoverUrlBySongId
 import izumi.music_cloud.global.GlobalUtil.getFilePathBySongId
 import izumi.music_cloud.global.GlobalUtil.milliSecToMinute
 import izumi.music_cloud.global.GlobalUtil.milliSecToSecond
+import izumi.music_cloud.toast.ToastMsg
 import izumi.music_cloud.viewmodel.SongViewModel
 
 
@@ -26,14 +28,13 @@ class PlayingFragment : BaseFragment() {
 
     companion object {
         const val TAG = "playing_fragment"
-        private const val HANDLER_DELAY_MILLI_SEC: Long = 1000
         private const val KEY_MODE_IS_SHUFFLE = "key_mode_is_shuffle"
 
         @JvmStatic
         fun newInstance() = PlayingFragment()
     }
 
-    private var playingCover: SimpleDraweeView? = null
+    private var coverImage: SimpleDraweeView? = null
     private var downloadProgress: TextView? = null
     private var titleTextView: TextView? = null
     private var artistTextView: TextView? = null
@@ -43,31 +44,42 @@ class PlayingFragment : BaseFragment() {
     private var playNext: ImageView? = null
     private var seekBar: SeekBar? = null
     private var currentTimeText: TextView? = null
-    private var endTimeText: TextView? = null
+    private var totalTimeText: TextView? = null
 
     private val updateProgressRunnable: Runnable = object : Runnable {
         override fun run() {
-            //same means pause
+            //same position means it is paused now.
             if (getPosition() != songViewModel.currentMilliSec.value) {
                 songViewModel.setCurrentMilliSec(getPosition())
 
                 //post the same runnable with 1 sec delayed
-                handler.postDelayed(this, HANDLER_DELAY_MILLI_SEC)
+                handler.postDelayed(this, GlobalConst.HANDLER_POST_DELAY_TIME)
             }
         }
     }
 
-    override fun resetSingleDownloadCallBack(): DownloadCallBack = object : DownloadCallBack {
-
-        override fun onComplete(index: Int) {
-            val songId = songViewModel.getSongByIndex(index)?.id ?: ""
-            songViewModel.setCurrentIndex(index)
-            songViewModel.setPlayingStatus(SongViewModel.STATUS_PLAYING)
-            songViewModel.setIsDownloading(false)
-            MusicController.startPlay(songId.getFilePathBySongId())
+    override fun setSingleDownloadCallBack(): DownloadCallBack = object : DownloadCallBack {
+        override fun onStart() {
+            songViewModel.setIsDownloading(true)
         }
 
-        override fun onError() {
+        override fun onProgress(percent: Int) {
+            songViewModel.setLoadingProgress(percent)
+        }
+
+        override fun onComplete(index: Int) {
+            songViewModel.setIsDownloading(false)
+
+            songViewModel.getSongByIndex(index)?.downloaded = true
+            songViewModel.setCurrentIndex(index)
+
+            val songId = songViewModel.getSongByIndex(index)?.id ?: ""
+            MusicController.startPlay(songId.getFilePathBySongId())
+            songViewModel.setPlayingStatus(SongViewModel.STATUS_PLAYING)
+        }
+
+        override fun onError(msg: ToastMsg) {
+            songViewModel.setToastMsg(msg)
             songViewModel.setPlayingStatus(SongViewModel.STATUS_NOT_INIT)
             songViewModel.setIsDownloading(false)
         }
@@ -91,7 +103,7 @@ class PlayingFragment : BaseFragment() {
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_playing, container, false)?.apply {
-            playingCover = findViewById(R.id.playing_cover)
+            coverImage = findViewById(R.id.playing_cover)
             downloadProgress = findViewById(R.id.playing_download_progress)
             titleTextView = findViewById(R.id.playing_title)
             artistTextView = findViewById(R.id.playing_artist)
@@ -101,7 +113,7 @@ class PlayingFragment : BaseFragment() {
             playNext = findViewById(R.id.playing_play_next)
             seekBar = findViewById(R.id.playing_seek_bar)
             currentTimeText = findViewById(R.id.playing_current_time)
-            endTimeText = findViewById(R.id.playing_end_time)
+            totalTimeText = findViewById(R.id.playing_total_time)
         }
     }
 
@@ -130,8 +142,8 @@ class PlayingFragment : BaseFragment() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                val endMilliSec = songViewModel.endMilliSec.value ?: 0
-                val targetMilliSec = ((seekBar?.progress ?: 0) / 100.0 * endMilliSec).toInt()
+                val totalMilliSec = songViewModel.totalMilliSec.value ?: 0
+                val targetMilliSec = ((seekBar?.progress ?: 0) / 100.0 * totalMilliSec).toInt()
                 seekTo(targetMilliSec)
             }
         })
@@ -144,7 +156,8 @@ class PlayingFragment : BaseFragment() {
             val song = songViewModel.getSongByIndex(it) ?: return@observe
 
             song.apply {
-                id?.let { id -> playingCover?.setImageURI(Uri.parse(id.getCoverUrlBySongId())) }
+                //deprecated but still use it anyway
+                id?.let { id -> coverImage?.setImageURI(Uri.parse(id.getCoverUrlBySongId())) }
                 title?.let { title -> titleTextView?.text = title }
                 artist?.let { artist -> artistTextView?.text = artist }
             }
@@ -157,7 +170,7 @@ class PlayingFragment : BaseFragment() {
 
                 //handler task to update every second
                 //handler to post a runnable
-                handler.postDelayed(updateProgressRunnable, HANDLER_DELAY_MILLI_SEC)
+                handler.postDelayed(updateProgressRunnable, GlobalConst.HANDLER_POST_DELAY_TIME)
             } else {
                 startAndPause?.setImageResource(R.drawable.ic_pause_song_black)
 
@@ -167,7 +180,10 @@ class PlayingFragment : BaseFragment() {
         }
 
         songViewModel.toastMsg.observe(viewLifecycleOwner) {
-            it?.let { Toast.makeText(requireContext(), it.msg, Toast.LENGTH_LONG).show() }
+            it?.let {
+                Toast.makeText(requireContext(), it.msg, Toast.LENGTH_SHORT).show()
+                songViewModel.setToastMsg(null)
+            }
         }
 
         songViewModel.shuffle.observe(viewLifecycleOwner) {
@@ -189,11 +205,11 @@ class PlayingFragment : BaseFragment() {
                 getString(R.string.duration_time, it.milliSecToMinute(), it.milliSecToSecond())
 
             seekBar?.progress =
-                ((it.toDouble() / (songViewModel.endMilliSec.value ?: Int.MAX_VALUE)) * 100).toInt()
+                ((it.toDouble() / (songViewModel.totalMilliSec.value ?: Int.MAX_VALUE)) * 100).toInt()
         }
 
-        songViewModel.endMilliSec.observe(viewLifecycleOwner) {
-            endTimeText?.text =
+        songViewModel.totalMilliSec.observe(viewLifecycleOwner) {
+            totalTimeText?.text =
                 getString(R.string.duration_time, it.milliSecToMinute(), it.milliSecToSecond())
         }
     }
